@@ -1,10 +1,6 @@
 import java.io.IOException;
 
 public class Lexer {
-    public static void main(String[] args) {
-        System.out.println("Hello world");
-    }
-
     Reader reader;
     char sym;
     IdTable idTable;
@@ -25,17 +21,17 @@ public class Lexer {
             sym=reader.next();
             nextToken();
         } else if (sym >= 'a' && sym <= 'z') {
-            tok=getWord(reader);
+            tok=getWord();
             //make token
         } else if (sym >= '0' && sym <= '9') {
-            tok=getNumber(reader);
+            tok=getNumber();
             //make token
         } else if (sym == '=' || sym == '<' || sym == '>' || sym == '!') {
             //get relOp or <-
-            tok=getRelOp(reader);
+            tok=getRelOp();
             //make token
         } else {
-            tok=getSymbol(reader);
+            tok=getSymbol();
             //get ( [ , ; + - * / { .   single char, or error
             // return token or error
         }
@@ -43,7 +39,7 @@ public class Lexer {
         //return token
     }
 
-    private Token getWord(Reader reader) throws IOException {
+    private Token getWord() throws IOException {
         String word = "" + sym;
         sym = reader.next();
         while ((sym >= '0' && sym <= '9') || (sym >= 'a' && sym <= 'z')) {
@@ -60,7 +56,7 @@ public class Lexer {
         //check if reserved word or identifier, return token
     }
 
-    private Token getNumber(Reader reader) throws IOException {
+    private Token getNumber() throws IOException {
         String num = "" + sym;
         sym = reader.next();
         while (sym >= '0' && sym <= '9') {
@@ -74,7 +70,7 @@ public class Lexer {
         //return token
     }
 
-    private Token getRelOp(Reader reader) throws IOException {
+    private Token getRelOp() throws IOException {
         String op = "" + sym;
         sym = reader.next();
         String extendedOp=op+sym;
@@ -92,7 +88,7 @@ public class Lexer {
         //return token
     }
 
-    private Token getSymbol(Reader reader) throws IOException, SyntaxException {
+    private Token getSymbol() throws IOException, SyntaxException {
         String op = "" + sym;
         sym = reader.next();
         String wordSymbol=reservedSymbols.wordSymbolMap.get(op);
