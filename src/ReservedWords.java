@@ -27,6 +27,8 @@ public enum ReservedWords {
     endingFirstBracketDefaultId,
     startingThirdBracketDefaultId,
     endingThirdBracketDefaultId,
+    startingCurlyBracketDefaultId,
+    endingCurlyBracketDefaultId,
     plusDefaultId,
     minusDefaultId,
     mulDefaultId,

@@ -4,14 +4,14 @@ public class Token {
     TokenKind kind;
 
     public Token(int info, TokenKind kind, boolean isIdentity) {
-        if(isIdentity){
+        if (isIdentity) {
             this.id = info;
+        } else {
+            this.val = info;
         }
-        else{
-            this.val=info;
-        }
-        this.kind=kind;
+        this.kind = kind;
     }
+
     public Token() {
         this.id = -1;
     }
