@@ -85,8 +85,14 @@ public class Parser {
         }
     }
 
-    private void assignment(IntermediateTree irTree) {
-
+    private void assignment(IntermediateTree irTree) throws IOException, SyntaxException {
+        Token left=token;
+        token=lexer.nextToken();
+        if(token.kind!=TokenKind.relOp && token.id!=ReservedWords.assignmentSymbolDefaultId.ordinal()){
+            //error
+        }
+        token=lexer.nextToken();
+        Expression(irTree);
     }
 
     private void funcCall(IntermediateTree irTree) { //do later
