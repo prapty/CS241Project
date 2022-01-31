@@ -198,6 +198,11 @@ public class Parser {
                 irTree.current.setLastInstruction(instruction);
             }
             else{
+                Instruction duplicate=getDuplicateInstruction(irTree.current.dominatorTree[op.ordinal()], instruction);
+                if(duplicate!=null){
+                    instruction=duplicate;
+                    irTree.current.instructions.remove(irTree.current.instructions.size()-1);
+                }
                 Operand firsrOp=new Operand(false, 0, instruction);
                 Instruction newInstruction = new Instruction(op, firsrOp, null);
                 node.value=newInstruction;
@@ -215,11 +220,15 @@ public class Parser {
         if(lastIndex !=-1){
             Instruction instruction = irTree.current.getAnyInstruction(lastIndex);
             Instruction lastInstruction=irTree.current.getLastInstruction();
+            Instruction duplicate=getDuplicateInstruction(irTree.current.dominatorTree[lastInstruction.operator.ordinal()], lastInstruction);
+            if(duplicate!=null){
+                lastInstruction=duplicate;
+                irTree.current.instructions.remove(irTree.current.instructions.size()-1);
+            }
             Operand op = new Operand(false, 0, lastInstruction);
             instruction.secondOp=op;
             irTree.current.setAnyInstruction(lastIndex, instruction);
         }
-
     }
 
     private void Term(IntermediateTree irTree) throws SyntaxException, IOException {
@@ -242,6 +251,11 @@ public class Parser {
                 irTree.current.setLastInstruction(instruction);
             }
             else{
+                Instruction duplicate=getDuplicateInstruction(irTree.current.dominatorTree[op.ordinal()], instruction);
+                if(duplicate!=null){
+                    instruction=duplicate;
+                    irTree.current.instructions.remove(irTree.current.instructions.size()-1);
+                }
                 Operand firsrOp=new Operand(false, 0, instruction);
                 Instruction newInstruction = new Instruction(op, firsrOp, null);
                 node.value=newInstruction;
@@ -259,6 +273,11 @@ public class Parser {
         if(lastIndex !=-1){
             Instruction instruction = irTree.current.getAnyInstruction(lastIndex);
             Instruction lastInstruction=irTree.current.getLastInstruction();
+            Instruction duplicate=getDuplicateInstruction(irTree.current.dominatorTree[lastInstruction.operator.ordinal()], lastInstruction);
+            if(duplicate!=null){
+                lastInstruction=duplicate;
+                irTree.current.instructions.remove(irTree.current.instructions.size()-1);
+            }
             Operand op = new Operand(false, 0, lastInstruction);
             instruction.secondOp=op;
             irTree.current.setAnyInstruction(lastIndex, instruction);
@@ -317,5 +336,34 @@ public class Parser {
 
     private void warning(String message){
         System.out.println(message);
+    }
+
+    private Instruction getDuplicateInstruction(InstructionLinkedList list, Instruction instruction){
+        InstructionLinkedList tail=list;
+        while(tail!=null){
+            if(sameInstruction(tail.value, instruction)){
+                break;
+            }
+            tail=tail.previous;
+        }
+        if(tail==null){
+            return null;
+        }
+        return tail.value;
+    }
+    private boolean sameInstruction(Instruction first, Instruction second){
+        if(sameOperand(first.firstOp, second.firstOp)&&sameOperand(first.secondOp, second.secondOp)){
+            return true;
+        }
+        else if(sameOperand(first.secondOp, second.firstOp)&&sameOperand(first.firstOp, second.secondOp)){
+            return true;
+        }
+        return false;
+    }
+    private boolean sameOperand(Operand first, Operand second){
+        if(first.constant==second.constant && first.constVal==second.constVal && first.valGenerator==second.valGenerator){
+            return true;
+        }
+        return false;
     }
 }
