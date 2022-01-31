@@ -1,9 +1,9 @@
 public enum Operators {
-    neg,
     add,
     sub,
     mul,
     div,
+    neg,
     cmp,
     adda,
     load,

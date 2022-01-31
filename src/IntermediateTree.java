@@ -3,12 +3,10 @@ import java.util.List;
 
 public class IntermediateTree {
     BasicBlock start;
-    List<BasicBlock> parentBlocks;
-    List<BasicBlock> childBlocks;
-    BasicBlock end;
+    BasicBlock current;
 
     public IntermediateTree() {
-        parentBlocks=new ArrayList<>();
-        childBlocks=new ArrayList<>();
+        current=new BasicBlock();
+        start=current;
     }
 }

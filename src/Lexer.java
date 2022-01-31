@@ -84,12 +84,16 @@ public class Lexer {
         sym = reader.next();
         String wordSymbol = reservedSymbols.wordSymbolMap.get(op);
         if (wordSymbol == null) {
-            String errorMessage = String.format(ErrorInfo.INVALID_SYMBOL_LEXER_ERROR, op);
-            throw new SyntaxException(errorMessage);
+            error(ErrorInfo.INVALID_SYMBOL_LEXER_ERROR, op);
         }
         int id = idTable.getID(wordSymbol);
         TokenKind kind = TokenKind.reservedSymbol;
         Token token = new Token(id, kind, true);
         return token;
+    }
+
+    private void error(String message, String op) throws SyntaxException {
+        String errorMessage = String.format(message, op);
+        throw new SyntaxException(errorMessage);
     }
 }
