@@ -14,8 +14,8 @@ public enum ReservedWords {
     voidDefaultId,
     functionDefaultId,
     mainDefaultId,
-    inputNameDefaultId,
-    outputNameDefaultId,
+    inputNumDefaultId,
+    outputNumDefaultId,
     outputNewLineDefaultId,
     equalToDefaultId,
     notEqualToDefaultId,
@@ -36,5 +36,5 @@ public enum ReservedWords {
     assignmentSymbolDefaultId,
     commaDefaultId,
     semicolonDefaultId,
-    dotDefaultId
+    dotDefaultId,
 }
