@@ -17,9 +17,9 @@ public class Lexer {
 
     Token nextToken() throws IOException, SyntaxException {
         Token tok = new Token();
-        if (sym == ' ' || sym == '\n') {
+        if (sym == ' ' || sym == '\n' || sym == '\r') {
             sym = reader.next();
-            nextToken();
+            tok = nextToken();
         } else if (sym >= 'a' && sym <= 'z') {
             tok = getWord();
         } else if (sym >= '0' && sym <= '9') {
@@ -73,7 +73,12 @@ public class Lexer {
         } else {
             sym = reader.next();
         }
-        int id = idTable.getID(wordSymbol);
+        String reservedWordCommonPart = "DefaultId";
+        int reservedWordCommonLength = reservedWordCommonPart.length();
+        int wordLength = wordSymbol.length();
+        int keyLength = wordLength - reservedWordCommonLength;
+        String key = wordSymbol.substring(0, keyLength);
+        int id = idTable.getID(key);
         TokenKind kind = TokenKind.relOp;
         Token token = new Token(id, kind, true);
         return token;
@@ -86,7 +91,12 @@ public class Lexer {
         if (wordSymbol == null) {
             error(ErrorInfo.INVALID_SYMBOL_LEXER_ERROR, op);
         }
-        int id = idTable.getID(wordSymbol);
+        String reservedWordCommonPart = "DefaultId";
+        int reservedWordCommonLength = reservedWordCommonPart.length();
+        int wordLength = wordSymbol.length();
+        int keyLength = wordLength - reservedWordCommonLength;
+        String key = wordSymbol.substring(0, keyLength);
+        int id = idTable.getID(key);
         TokenKind kind = TokenKind.reservedSymbol;
         Token token = new Token(id, kind, true);
         return token;

@@ -89,26 +89,28 @@ public class Parser {
             //throw error
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "reserved word");
         }
+
         if (token.id == ReservedWords.letDefaultId.ordinal()) {
             token = lexer.nextToken();
             assignment(irTree);
         }
-        if (token.id == ReservedWords.callDefaultId.ordinal()) {
+        else if (token.id == ReservedWords.callDefaultId.ordinal()) {
             token = lexer.nextToken();
             funcCall(irTree);
         }
-        if (token.id == ReservedWords.ifDefaultId.ordinal()) {
+        else if (token.id == ReservedWords.ifDefaultId.ordinal()) {
             token = lexer.nextToken();
             IfStatement(irTree);
         }
-        if (token.id == ReservedWords.whileDefaultId.ordinal()) {
+        else if (token.id == ReservedWords.whileDefaultId.ordinal()) {
             token = lexer.nextToken();
             whileStatement(irTree);
         }
-        if (token.id == ReservedWords.returnDefaultId.ordinal()) {
+        else if (token.id == ReservedWords.returnDefaultId.ordinal()) {
             token = lexer.nextToken();
             returnStatement(irTree);
-        } else {
+        }
+        else {
             //trhow error
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "let OR call OR if OR while OR return");
         }
@@ -126,12 +128,23 @@ public class Parser {
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "->");
         }
         token = lexer.nextToken();
+        if(token.kind==TokenKind.reservedWord && token.id==ReservedWords.callDefaultId.ordinal()){
+            token = lexer.nextToken();
+            funcCall(irTree);
+        }
         Expression(irTree);
         Instruction instruction = irTree.current.getLastInstruction();
         if (instruction.operator == null) {
-            instruction.operator = Operators.constant;
-            instruction.secondOp = instruction.firstOp;
-            irTree.current.setLastInstruction(instruction);
+            instruction=instruction.firstOp.valGenerator;
+//            instruction.operator = Operators.as;
+//            instruction.secondOp = instruction.firstOp;
+//            Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[Operators.constant.ordinal()],instruction);
+//            if(duplicate!=null){
+//                irTree.current.removeLastInstruction();
+//                instruction=duplicate;
+//            }
+            //irTree.current.setLastInstruction(instruction);
+            irTree.current.removeLastInstruction();
         }
         irTree.current.valueInstructionMap.put(left.id, instruction);
         irTree.current.assignedVariables.add(left.id);
@@ -250,7 +263,6 @@ public class Parser {
         irTree.current = newBlock;
     }
 
-
     private void returnStatement(IntermediateTree irTree) {
 
     }
@@ -299,18 +311,17 @@ public class Parser {
         int lastIndex = -1;
         Term(irTree);
         while (token.kind == TokenKind.reservedSymbol && (token.id == ReservedWords.plusDefaultId.ordinal() || token.id == ReservedWords.minusDefaultId.ordinal())) {
-            token = lexer.nextToken();
-            Instruction instruction = irTree.current.getLastInstruction();
             Operators op;
-            InstructionLinkedList node = new InstructionLinkedList();
             if (token.id == ReservedWords.plusDefaultId.ordinal()) {
                 op = Operators.add;
             } else {
                 op = Operators.sub;
             }
+            token = lexer.nextToken();
+            Instruction instruction = irTree.current.getLastInstruction();
+
             if (instruction.operator == null) {
                 instruction.operator = op;
-                node.value = instruction;
                 irTree.current.setLastInstruction(instruction);
             } else {
                 Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[op.ordinal()], instruction);
@@ -320,7 +331,6 @@ public class Parser {
                 }
                 Operand firsrOp = new Operand(false, 0, instruction, token.id);
                 Instruction newInstruction = new Instruction(op, firsrOp, null);
-                node.value = newInstruction;
                 irTree.current.instructions.add(newInstruction);
                 if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
                     lastIndex = irTree.current.instructions.size() - 1;
@@ -328,8 +338,7 @@ public class Parser {
                     irTree.current.instructions.add(initInstruction);
                 }
             }
-            node.previous = irTree.current.dominatorTree[op.ordinal()];
-            irTree.current.dominatorTree[op.ordinal()] = node;
+
             Term(irTree);
         }
         if (lastIndex != -1) {
@@ -350,18 +359,16 @@ public class Parser {
         Factor(irTree);
         int lastIndex = -1;
         while (token.kind == TokenKind.reservedSymbol && (token.id == ReservedWords.mulDefaultId.ordinal() || token.id == ReservedWords.divDefaultId.ordinal())) {
-            token = lexer.nextToken();
-            Instruction instruction = irTree.current.getLastInstruction();
-            InstructionLinkedList node = new InstructionLinkedList();
             Operators op;
             if (token.id == ReservedWords.mulDefaultId.ordinal()) {
                 op = Operators.mul;
             } else {
                 op = Operators.div;
             }
+            token = lexer.nextToken();
+            Instruction instruction = irTree.current.getLastInstruction();
             if (instruction.operator == null) {
                 instruction.operator = op;
-                node.value = instruction;
                 irTree.current.setLastInstruction(instruction);
             } else {
                 Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[op.ordinal()], instruction);
@@ -371,7 +378,6 @@ public class Parser {
                 }
                 Operand firsrOp = new Operand(false, 0, instruction, token.id);
                 Instruction newInstruction = new Instruction(op, firsrOp, null);
-                node.value = newInstruction;
                 irTree.current.instructions.add(newInstruction);
                 if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
                     lastIndex = irTree.current.instructions.size() - 1;
@@ -379,8 +385,6 @@ public class Parser {
                     irTree.current.instructions.add(initInstruction);
                 }
             }
-            node.previous = irTree.current.dominatorTree[op.ordinal()];
-            irTree.current.dominatorTree[op.ordinal()] = node;
             Factor(irTree);
         }
         if (lastIndex != -1) {
@@ -428,7 +432,8 @@ public class Parser {
                     op.valGenerator=duplicate;
                 }
                 else{
-                    op.valGenerator=constantInstruction;
+                    op = new Operand(true, token.val, constantInstruction, -1);
+                    //op.valGenerator=constantInstruction;
                     InstructionLinkedList node = new InstructionLinkedList();
                     node.value=constantInstruction;
                     node.previous=irTree.current.dominatorTree[Operators.constant.ordinal()];
@@ -436,7 +441,7 @@ public class Parser {
                 }
             }
             Instruction instruction = irTree.current.getLastInstruction();
-            if (instruction == null) {
+            if (instruction == null||instruction.secondOp!=null) {
                 instruction = new Instruction(null, op, null);
                 irTree.current.instructions.add(instruction);
             } else if (instruction.operator == null) {
@@ -444,6 +449,17 @@ public class Parser {
                 irTree.current.setLastInstruction(instruction);
             } else if (instruction.operator != null && instruction.secondOp == null) {
                 instruction.secondOp = op;
+                Instruction duplicate=getDuplicateInstruction(irTree.current.dominatorTree[instruction.operator.ordinal()],instruction);
+                if(duplicate!=null){
+                    irTree.current.removeLastInstruction();
+                    instruction=duplicate;
+                }
+                else{
+                    InstructionLinkedList node = new InstructionLinkedList();
+                    node.value=instruction;
+                    node.previous = irTree.current.dominatorTree[instruction.operator.ordinal()];
+                    irTree.current.dominatorTree[instruction.operator.ordinal()] = node;
+                }
                 irTree.current.setLastInstruction(instruction);
             }
             token = lexer.nextToken();

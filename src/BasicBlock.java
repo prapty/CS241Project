@@ -29,6 +29,10 @@ public class BasicBlock {
         int last=instructions.size()-1;
         return instructions.get(last);
     }
+    Instruction removeLastInstruction(){
+        int last=instructions.size()-1;
+        return instructions.remove(last);
+    }
     void setLastInstruction(Instruction instruction){
         int last=instructions.size()-1;
         instructions.set(last, instruction);
