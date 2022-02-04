@@ -1,25 +1,25 @@
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class BasicBlock {
     List<Instruction> instructions;
     List<BasicBlock> parentBlocks;
     List<BasicBlock> childBlocks;
+    //To keep track of assigned variables for phi functions
+    Set<Integer> assignedVariables;
     //during assignment, look into map of each parent block for latest value.
     // Join block has multiple parents. Use phi for them. All other blocks have single parents
     Map<Integer, Instruction> valueInstructionMap;
 
     //Array to maintain linked list of basic operation instructions for common subexpression elimination
-    //index: 0-add, 1-sub, 2-mul, 3-div
+    //index: 0-add, 1-sub, 2-mul, 3-div, 4-const
     InstructionLinkedList[] dominatorTree;
     public BasicBlock() {
         instructions = new ArrayList<>();
         valueInstructionMap = new HashMap<>();
         parentBlocks=new ArrayList<>();
         childBlocks=new ArrayList<>();
-        dominatorTree=new InstructionLinkedList[4];
+        assignedVariables=new HashSet<>();
+        dominatorTree=new InstructionLinkedList[5];
     }
     Instruction getLastInstruction(){
         int numInstructions=instructions.size();

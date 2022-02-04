@@ -3,6 +3,7 @@ public enum Operators {
     sub,
     mul,
     div,
+    constant,
     neg,
     cmp,
     adda,
