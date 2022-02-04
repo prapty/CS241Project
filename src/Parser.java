@@ -306,21 +306,27 @@ public class Parser {
             Operand opcmp = new Operand(false, 0, last, token.id);
             if (relOp.id == ReservedWords.equalToDefaultId.ordinal()){
                 Instruction branch = new Instruction(Operators.beq, opcmp, null);
+                irTree.current.instructions.add(branch);
             }
             if (relOp.id == ReservedWords.notEqualToDefaultId.ordinal()){
                 Instruction branch = new Instruction(Operators.bne, opcmp, null);
+                irTree.current.instructions.add(branch);
             }
             if (relOp.id == ReservedWords.lessThanDefaultId.ordinal()){
                 Instruction branch = new Instruction(Operators.blt, opcmp, null);
+                irTree.current.instructions.add(branch);
             }
             if (relOp.id == ReservedWords.lessThanOrEqualToDefaultId.ordinal()){
                 Instruction branch = new Instruction(Operators.ble, opcmp, null);
+                irTree.current.instructions.add(branch);
             }
             if (relOp.id == ReservedWords.greaterThanDefaultId.ordinal()){
                 Instruction branch = new Instruction(Operators.bgt, opcmp, null);
+                irTree.current.instructions.add(branch);
             }
             if (relOp.id == ReservedWords.greaterThanOrEqualToDefaultId.ordinal()){
                 Instruction branch = new Instruction(Operators.bge, opcmp, null);
+                irTree.current.instructions.add(branch);
             }
         }
     }
