@@ -241,22 +241,27 @@ public class Parser {
         condBlock.assignedVariables.addAll(whileBlock.assignedVariables);
         createPhiInstructions(condBlock, index);
 
-        //go through instructions in while block and update variable values using phi
-        for (int i = 0; i < whileBlock.instructions.size(); i++) {
-            Instruction instruction = whileBlock.getAnyInstruction(i);
-            if (!instruction.firstOp.constant) {
-                int id = instruction.firstOp.id;
-                if (whileBlock.assignedVariables.contains(id)) {
-                    instruction.firstOp.valGenerator = condBlock.valueInstructionMap.get(id);
-                }
-            }
-            if (!instruction.secondOp.constant) {
-                int id = instruction.secondOp.id;
-                if (whileBlock.assignedVariables.contains(id)) {
-                    instruction.secondOp.valGenerator = condBlock.valueInstructionMap.get(instruction.secondOp.id);
-                }
-            }
+        //go through instructions for each assigned variables in while block and update variable values using phi
+        for(Integer id: whileBlock.assignedVariables){
+            Instruction valueGenerator = whileBlock.valueInstructionMap.get(id);
+            valueGenerator = updateWhileBlockInstruction(whileBlock, valueGenerator);
+            whileBlock.valueInstructionMap.put(id, valueGenerator);
         }
+//        for (int i = 0; i < whileBlock.instructions.size(); i++) {
+//            Instruction instruction = whileBlock.getAnyInstruction(i);
+//            if (!instruction.firstOp.constant) {
+//                int id = instruction.firstOp.id;
+//                if (whileBlock.assignedVariables.contains(id)) {
+//                    instruction.firstOp.valGenerator = condBlock.valueInstructionMap.get(id);
+//                }
+//            }
+//            if (!instruction.secondOp.constant) {
+//                int id = instruction.secondOp.id;
+//                if (whileBlock.assignedVariables.contains(id)) {
+//                    instruction.secondOp.valGenerator = condBlock.valueInstructionMap.get(instruction.secondOp.id);
+//                }
+//            }
+//        }
         BasicBlock newBlock = new BasicBlock();
         newBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
         newBlock.dominatorTree = irTree.current.dominatorTree.clone();
@@ -395,6 +400,7 @@ public class Parser {
         Instruction duplicate=getDuplicateInstruction(irTree.current.dominatorTree[operator.ordinal()],instruction);
         if(duplicate!=null){
             instruction=duplicate;
+            instruction.duplicate=true;
         }
         else{
             irTree.current.instructions.add(instruction);
@@ -403,10 +409,13 @@ public class Parser {
             node.previous = irTree.current.dominatorTree[operator.ordinal()];
             irTree.current.dominatorTree[operator.ordinal()] = node;
         }
+        //both operands constant
         int id=-1;
+        //both operands variables/instructions
         if(!left.constant && !right.constant){
             id=-3;
         }
+        // one of the operands variable/instruction
         if((left.constant && !right.constant)||(!left.constant && right.constant)){
             id=-2;
         }
@@ -438,6 +447,7 @@ public class Parser {
                     warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);
                     valueGenerator=assignZeroInstruction;
                 }
+                valueGenerator.duplicate=true;
                 result = new Operand(false, 0, valueGenerator, token.id);
             }
             if (token.kind == TokenKind.number) {
@@ -447,6 +457,7 @@ public class Parser {
                 Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[Operators.constant.ordinal()], constantInstruction);
                 if (duplicate != null) {
                     result.valGenerator = duplicate;
+                    result.valGenerator.duplicate = true;
                 } else {
                     result = new Operand(true, token.val, constantInstruction, -1);
                     //op.valGenerator=constantInstruction;
@@ -527,5 +538,19 @@ public class Parser {
                 }
             }
         }
+    }
+
+    private Instruction updateWhileBlockInstruction(BasicBlock whileBlock, Instruction instruction){
+        if(instruction.operator!=Operators.constant){
+            Operand firstOp=instruction.firstOp;
+            if(!firstOp.constant && firstOp.id != -1){
+
+            }
+            Operand secondOp=instruction.secondOp;
+            if(!secondOp.constant && secondOp.id != -1){
+
+            }
+        }
+        return instruction;
     }
 }
