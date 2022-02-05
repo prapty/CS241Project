@@ -142,6 +142,7 @@ public class Parser {
             BasicBlock thenBlock = new BasicBlock();
             thenBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
             thenBlock.dominatorTree = irTree.current.dominatorTree.clone();
+            thenBlock.declaredVariables.addAll(irTree.current.declaredVariables);
             thenBlock.parentBlocks.add(irTree.current);
             irTree.current.childBlocks.add(thenBlock);
             irTree.current = thenBlock;
@@ -162,6 +163,7 @@ public class Parser {
             BasicBlock elseBlock = new BasicBlock();
             elseBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
             elseBlock.dominatorTree = irTree.current.dominatorTree.clone();
+            elseBlock.declaredVariables.addAll(irTree.current.declaredVariables);
             irTree.current = irTree.current.parentBlocks.get(0);
             elseBlock.parentBlocks.add(irTree.current);
             irTree.current.childBlocks.add(elseBlock);
@@ -171,6 +173,7 @@ public class Parser {
             BasicBlock elseBlock = new BasicBlock();
             elseBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
             elseBlock.dominatorTree = irTree.current.dominatorTree.clone();
+            elseBlock.declaredVariables.addAll(irTree.current.declaredVariables);
             irTree.current = irTree.current.parentBlocks.get(0);
             elseBlock.parentBlocks.add(irTree.current);
             irTree.current.childBlocks.add(elseBlock);
@@ -186,6 +189,7 @@ public class Parser {
                 block.childBlocks.add(joinBlock);
                 //get all variables which were assigned in if block and else block
                 joinBlock.assignedVariables.addAll(block.assignedVariables);
+                joinBlock.declaredVariables.addAll(block.declaredVariables);
             }
             //create phi instructions for changed variables
             int lastIndex = Math.max((joinBlock.instructions.size() - 1), 0);
@@ -200,6 +204,7 @@ public class Parser {
         BasicBlock condBlock = new BasicBlock();
         condBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
         condBlock.dominatorTree = irTree.current.dominatorTree.clone();
+        condBlock.declaredVariables.addAll(irTree.current.declaredVariables);
         condBlock.parentBlocks.add(irTree.current);
         irTree.current.childBlocks.add(condBlock);
         irTree.current = condBlock;
@@ -212,6 +217,7 @@ public class Parser {
         BasicBlock whileBlock = new BasicBlock();
         whileBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
         whileBlock.dominatorTree = irTree.current.dominatorTree.clone();
+        whileBlock.declaredVariables.addAll(irTree.current.declaredVariables);
         whileBlock.parentBlocks.add(irTree.current);
         irTree.current.childBlocks.add(whileBlock);
         irTree.current.parentBlocks.add(whileBlock);
@@ -254,6 +260,7 @@ public class Parser {
         BasicBlock newBlock = new BasicBlock();
         newBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
         newBlock.dominatorTree = irTree.current.dominatorTree.clone();
+        newBlock.declaredVariables.addAll(irTree.current.declaredVariables);
         newBlock.parentBlocks.add(condBlock);
         condBlock.childBlocks.add(newBlock);
         irTree.current = newBlock;
@@ -327,6 +334,7 @@ public class Parser {
             //error
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "identity");
         }
+        irTree.current.declaredVariables.add(token.id);
         token = lexer.nextToken();
         while (token.kind == TokenKind.reservedSymbol && (token.id == ReservedWords.commaDefaultId.ordinal())) {
             token = lexer.nextToken();
@@ -334,6 +342,7 @@ public class Parser {
                 //error
                 error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "ident");
             }
+            irTree.current.declaredVariables.add(token.id);
             token = lexer.nextToken();
             //store ident?
         }
@@ -421,6 +430,9 @@ public class Parser {
         } else if (token.kind == TokenKind.identity || token.kind == TokenKind.number) {
             if (token.kind == TokenKind.identity) {
                 //identity
+                if(!irTree.current.declaredVariables.contains(token.id)){
+                    error(ErrorInfo.UNDECLARED_VARIABLE_PARSER_ERROR,"");
+                }
                 Instruction valueGenerator = irTree.current.valueInstructionMap.get(token.id);
                 if (valueGenerator == null) {
                     warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);

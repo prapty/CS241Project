@@ -4,6 +4,7 @@ public class BasicBlock {
     List<Instruction> instructions;
     List<BasicBlock> parentBlocks;
     List<BasicBlock> childBlocks;
+    List<Integer> declaredVariables;
     //To keep track of assigned variables for phi functions
     Set<Integer> assignedVariables;
     //during assignment, look into map of each parent block for latest value.
@@ -18,6 +19,7 @@ public class BasicBlock {
         valueInstructionMap = new HashMap<>();
         parentBlocks=new ArrayList<>();
         childBlocks=new ArrayList<>();
+        declaredVariables=new ArrayList<>();
         assignedVariables=new HashSet<>();
         dominatorTree=new InstructionLinkedList[5];
     }
