@@ -127,21 +127,8 @@ public class Parser {
             token = lexer.nextToken();
             funcCall(irTree);
         }
-        Expression(irTree);
-        Instruction instruction = irTree.current.getLastInstruction();
-        if (instruction.operator == null) {
-            instruction = instruction.firstOp.valGenerator;
-//            instruction.operator = Operators.as;
-//            instruction.secondOp = instruction.firstOp;
-//            Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[Operators.constant.ordinal()],instruction);
-//            if(duplicate!=null){
-//                irTree.current.removeLastInstruction();
-//                instruction=duplicate;
-//            }
-            //irTree.current.setLastInstruction(instruction);
-            irTree.current.removeLastInstruction();
-        }
-        irTree.current.valueInstructionMap.put(left.id, instruction);
+        Operand op=Expression(irTree);
+        irTree.current.valueInstructionMap.put(left.id, op.valGenerator);
         irTree.current.assignedVariables.add(left.id);
     }
 
@@ -358,105 +345,72 @@ public class Parser {
         //; is handled elsewhere
     }
 
-    private void Expression(IntermediateTree irTree) throws IOException, SyntaxException {
-        int lastIndex = -1;
-        Term(irTree);
+    private Operand Expression(IntermediateTree irTree) throws IOException, SyntaxException {
+        Operand left, right;
+        left=Term(irTree);
         while (token.kind == TokenKind.reservedSymbol && (token.id == ReservedWords.plusDefaultId.ordinal() || token.id == ReservedWords.minusDefaultId.ordinal())) {
-            Operators op;
+            Operators operator;
             if (token.id == ReservedWords.plusDefaultId.ordinal()) {
-                op = Operators.add;
+                operator = Operators.add;
             } else {
-                op = Operators.sub;
+                operator = Operators.sub;
             }
             token = lexer.nextToken();
-            Instruction instruction = irTree.current.getLastInstruction();
-
-            if (instruction.operator == null) {
-                instruction.operator = op;
-                irTree.current.setLastInstruction(instruction);
-            } else {
-                Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[op.ordinal()], instruction);
-                if (duplicate != null) {
-                    instruction = duplicate;
-                    irTree.current.instructions.remove(irTree.current.instructions.size() - 1);
-                }
-                Operand firsrOp = new Operand(false, 0, instruction, token.id);
-                Instruction newInstruction = new Instruction(op, firsrOp, null);
-                irTree.current.instructions.add(newInstruction);
-                if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
-                    lastIndex = irTree.current.instructions.size() - 1;
-                    Instruction initInstruction = new Instruction(null, null, null);
-                    irTree.current.instructions.add(initInstruction);
-                }
-            }
-
-            Term(irTree);
+            right = Term(irTree);
+            left = Compute(irTree, operator, left, right);
         }
-        if (lastIndex != -1) {
-            Instruction instruction = irTree.current.getAnyInstruction(lastIndex);
-            Instruction lastInstruction = irTree.current.getLastInstruction();
-            Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[lastInstruction.operator.ordinal()], lastInstruction);
-            if (duplicate != null) {
-                lastInstruction = duplicate;
-                irTree.current.instructions.remove(irTree.current.instructions.size() - 1);
-            }
-            Operand op = new Operand(false, 0, lastInstruction, token.id);
-            instruction.secondOp = op;
-            irTree.current.setAnyInstruction(lastIndex, instruction);
-        }
+        return left;
     }
 
-    private void Term(IntermediateTree irTree) throws SyntaxException, IOException {
-        Factor(irTree);
-        int lastIndex = -1;
+    private Operand Term(IntermediateTree irTree) throws SyntaxException, IOException {
+        Operand left, right;
+        left=Factor(irTree);
+
         while (token.kind == TokenKind.reservedSymbol && (token.id == ReservedWords.mulDefaultId.ordinal() || token.id == ReservedWords.divDefaultId.ordinal())) {
-            Operators op;
+            Operators operator;
             if (token.id == ReservedWords.mulDefaultId.ordinal()) {
-                op = Operators.mul;
+                operator = Operators.mul;
             } else {
-                op = Operators.div;
+                operator = Operators.div;
             }
             token = lexer.nextToken();
-            Instruction instruction = irTree.current.getLastInstruction();
-            if (instruction.operator == null) {
-                instruction.operator = op;
-                irTree.current.setLastInstruction(instruction);
-            } else {
-                Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[op.ordinal()], instruction);
-                if (duplicate != null) {
-                    instruction = duplicate;
-                    irTree.current.instructions.remove(irTree.current.instructions.size() - 1);
-                }
-                Operand firsrOp = new Operand(false, 0, instruction, token.id);
-                Instruction newInstruction = new Instruction(op, firsrOp, null);
-                irTree.current.instructions.add(newInstruction);
-                if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
-                    lastIndex = irTree.current.instructions.size() - 1;
-                    Instruction initInstruction = new Instruction(null, null, null);
-                    irTree.current.instructions.add(initInstruction);
-                }
-            }
-            Factor(irTree);
+            right=Factor(irTree);
+            left=Compute(irTree, operator, left, right);
         }
-        if (lastIndex != -1) {
-            Instruction instruction = irTree.current.getAnyInstruction(lastIndex);
-            Instruction lastInstruction = irTree.current.getLastInstruction();
-            Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[lastInstruction.operator.ordinal()], lastInstruction);
-            if (duplicate != null) {
-                lastInstruction = duplicate;
-                irTree.current.instructions.remove(irTree.current.instructions.size() - 1);
-            }
-            Operand op = new Operand(false, 0, lastInstruction, token.id);
-            instruction.secondOp = op;
-            irTree.current.setAnyInstruction(lastIndex, instruction);
-        }
+
+        return left;
     }
 
-    private void Factor(IntermediateTree irTree) throws SyntaxException, IOException {
+    private Operand Compute(IntermediateTree irTree, Operators operator, Operand left, Operand right) {
+        Instruction instruction = new Instruction(operator, left, right);
+        Instruction duplicate=getDuplicateInstruction(irTree.current.dominatorTree[operator.ordinal()],instruction);
+        if(duplicate!=null){
+            instruction=duplicate;
+        }
+        else{
+            irTree.current.instructions.add(instruction);
+            InstructionLinkedList node = new InstructionLinkedList();
+            node.value = instruction;
+            node.previous = irTree.current.dominatorTree[operator.ordinal()];
+            irTree.current.dominatorTree[operator.ordinal()] = node;
+        }
+        int id=-1;
+        if(!left.constant && !right.constant){
+            id=-3;
+        }
+        if((left.constant && !right.constant)||(!left.constant && right.constant)){
+            id=-2;
+        }
+        Operand op = new Operand(false, 0, instruction, id);
+        return op;
+        //op.valGenerator=constantInstruction;
+    }
+
+    private Operand Factor(IntermediateTree irTree) throws SyntaxException, IOException {
+        Operand result=new Operand();
         if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
             token = lexer.nextToken();
-
-            Expression(irTree);
+            result=Expression(irTree);
             if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.endingFirstBracketDefaultId.ordinal()) {
                 //end expression
                 token = lexer.nextToken();
@@ -465,24 +419,24 @@ public class Parser {
             }
 
         } else if (token.kind == TokenKind.identity || token.kind == TokenKind.number) {
-            Operand op = new Operand();
             if (token.kind == TokenKind.identity) {
                 //identity
                 Instruction valueGenerator = irTree.current.valueInstructionMap.get(token.id);
                 if (valueGenerator == null) {
                     warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);
+                    valueGenerator=assignZeroInstruction;
                 }
-                op = new Operand(false, 0, valueGenerator, token.id);
+                result = new Operand(false, 0, valueGenerator, token.id);
             }
             if (token.kind == TokenKind.number) {
                 //num
-                op = new Operand(true, token.val, null, -1);
-                Instruction constantInstruction = new Instruction(Operators.constant, op, op);
+                result = new Operand(true, token.val, null, -1);
+                Instruction constantInstruction = new Instruction(Operators.constant, result, result);
                 Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[Operators.constant.ordinal()], constantInstruction);
                 if (duplicate != null) {
-                    op.valGenerator = duplicate;
+                    result.valGenerator = duplicate;
                 } else {
-                    op = new Operand(true, token.val, constantInstruction, -1);
+                    result = new Operand(true, token.val, constantInstruction, -1);
                     //op.valGenerator=constantInstruction;
                     InstructionLinkedList node = new InstructionLinkedList();
                     node.value = constantInstruction;
@@ -490,31 +444,11 @@ public class Parser {
                     irTree.current.dominatorTree[Operators.constant.ordinal()] = node;
                 }
             }
-            Instruction instruction = irTree.current.getLastInstruction();
-            if (instruction == null || instruction.secondOp != null) {
-                instruction = new Instruction(null, op, null);
-                irTree.current.instructions.add(instruction);
-            } else if (instruction.operator == null) {
-                instruction.firstOp = op;
-                irTree.current.setLastInstruction(instruction);
-            } else if (instruction.operator != null && instruction.secondOp == null) {
-                instruction.secondOp = op;
-                Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[instruction.operator.ordinal()], instruction);
-                if (duplicate != null) {
-                    irTree.current.removeLastInstruction();
-                    instruction = duplicate;
-                } else {
-                    InstructionLinkedList node = new InstructionLinkedList();
-                    node.value = instruction;
-                    node.previous = irTree.current.dominatorTree[instruction.operator.ordinal()];
-                    irTree.current.dominatorTree[instruction.operator.ordinal()] = node;
-                }
-                irTree.current.setLastInstruction(instruction);
-            }
             token = lexer.nextToken();
         } else if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.callDefaultId.ordinal()) {
             //do later
         }
+        return result;
     }
 
     private void error(String message, String expected) throws SyntaxException {
