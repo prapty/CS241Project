@@ -132,7 +132,77 @@ public class Parser {
         irTree.current.assignedVariables.add(left.id);
     }
 
-    private void funcCall(IntermediateTree irTree) { //do later
+    private Operand funcCall(IntermediateTree irTree) throws SyntaxException, IOException { //do later
+        if (token.kind == TokenKind.reservedWord) {
+            if (token.id == ReservedWords.inputNumDefaultId.ordinal()) {
+                Operators ops = Operators.read;
+                Instruction readInstr = new Instruction(ops);
+
+                irTree.current.instructions.add(readInstr);
+                InstructionLinkedList node = new InstructionLinkedList();
+                node.value = readInstr;
+                node.previous = irTree.current.dominatorTree[ops.ordinal()];
+                irTree.current.dominatorTree[ops.ordinal()] = node;
+                token = lexer.nextToken();
+                token = lexer.nextToken();
+
+                //return operand
+            } else if (token.id == ReservedWords.outputNumDefaultId.ordinal()) {
+                Operators ops = Operators.write;
+                token = lexer.nextToken();
+                token = lexer.nextToken();
+                Operand writtenNum;
+                if (token.kind == TokenKind.number) {
+                    writtenNum = new Operand(true, token.val, null, -1);
+                    Instruction constantInstruction = new Instruction(Operators.constant, writtenNum, writtenNum);
+                    Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[Operators.constant.ordinal()], constantInstruction);
+                    if (duplicate != null) {
+                        writtenNum.valGenerator = duplicate;
+                        writtenNum.valGenerator.duplicate = true;
+                    } else {
+                        writtenNum = new Operand(true, token.val, constantInstruction, -1);
+                        //op.valGenerator=constantInstruction;
+                        InstructionLinkedList node = new InstructionLinkedList();
+                        node.value = constantInstruction;
+                        node.previous = irTree.current.dominatorTree[Operators.constant.ordinal()];
+                        irTree.current.dominatorTree[Operators.constant.ordinal()] = node;
+                    }
+                    Instruction write = new Instruction(ops, writtenNum);
+
+                    //put in block
+                } else if (token.kind == TokenKind.identity) {
+                    Operand varWrite;
+                    if (!irTree.current.declaredVariables.contains(token.id)) {
+                        error(ErrorInfo.UNDECLARED_VARIABLE_PARSER_ERROR, "");
+                    }
+                    Instruction valueGenerator = irTree.current.valueInstructionMap.get(token.id);
+                    if (valueGenerator == null) {
+                        warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);
+                        valueGenerator = assignZeroInstruction;
+                    }
+                    valueGenerator.duplicate = true;
+                    varWrite = new Operand(false, 0, valueGenerator, token.id);
+                    Instruction write = new Instruction(ops, varWrite);
+
+                    //put in block
+                }
+                token = lexer.nextToken();
+            } else if (token.id == ReservedWords.outputNewLineDefaultId.ordinal()) {
+                Operators ops = Operators.writeNL;
+                Instruction writeNLInstr = new Instruction(ops);
+
+                irTree.current.instructions.add(writeNLInstr);
+                InstructionLinkedList node = new InstructionLinkedList();
+                node.value = writeNLInstr;
+                node.previous = irTree.current.dominatorTree[ops.ordinal()];
+                irTree.current.dominatorTree[ops.ordinal()] = node;
+                token = lexer.nextToken();
+                token = lexer.nextToken();
+            } else {
+                //error
+            }
+        }
+        return null;
     }
 
     private void IfStatement(IntermediateTree irTree) throws SyntaxException, IOException {
@@ -272,8 +342,14 @@ public class Parser {
         irTree.current = newBlock;
     }
 
-    private void returnStatement(IntermediateTree irTree) {
-
+    private Operand returnStatement(IntermediateTree irTree) throws SyntaxException, IOException {
+        if (token.kind == TokenKind.reservedSymbol && (token.id == ReservedWords.endingCurlyBracketDefaultId.ordinal() || token.id == ReservedWords.semicolonDefaultId.ordinal())) {
+            return null;
+        } else if (token.kind == TokenKind.reservedWord && (token.id == ReservedWords.elseDefaultId.ordinal() || token.id == ReservedWords.fiDefaultId.ordinal() || token.id == ReservedWords.odDefaultId.ordinal())) {
+            return null;
+        } else {
+            return Expression(irTree);
+        }
     }
 
     private void relation(IntermediateTree irTree) throws SyntaxException, IOException {

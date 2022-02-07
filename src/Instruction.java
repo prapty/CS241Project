@@ -10,4 +10,16 @@ public class Instruction {
         this.secondOp = secondOp;
         this.duplicate = false;
     }
+
+    public Instruction(Operators operator){
+        this.operator = operator;
+        firstOp = null;
+        secondOp = null;
+    }
+
+    public Instruction(Operators operator, Operand opr){
+        this.operator = operator;
+        this.firstOp = opr;
+        secondOp = null;
+    }
 }
