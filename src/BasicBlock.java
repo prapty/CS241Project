@@ -12,7 +12,7 @@ public class BasicBlock {
     Map<Integer, Instruction> valueInstructionMap;
 
     //Array to maintain linked list of basic operation instructions for common subexpression elimination
-    //index: 0-add, 1-sub, 2-mul, 3-div, 4-const
+    //index: 0-add, 1-sub, 2-mul, 3-div, 4-const, 5-cmp
     InstructionLinkedList[] dominatorTree;
     public BasicBlock() {
         instructions = new ArrayList<>();
@@ -21,7 +21,7 @@ public class BasicBlock {
         childBlocks=new ArrayList<>();
         declaredVariables=new ArrayList<>();
         assignedVariables=new HashSet<>();
-        dominatorTree=new InstructionLinkedList[5];
+        dominatorTree=new InstructionLinkedList[6];
     }
     Instruction getLastInstruction(){
         int numInstructions=instructions.size();
