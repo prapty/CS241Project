@@ -13,13 +13,15 @@ public class BasicBlock {
     //during assignment, look into map of each parent block for latest value.
     // Join block has multiple parents. Use phi for them. All other blocks have single parents
     Map<Integer, Instruction> valueInstructionMap;
-    List<Integer>redundantIndex;
-    Multimap<Instruction, Integer>instructionUsage;
-    Multimap<Instruction, Integer>instructionValueMap;
+    Multimap<Instruction, Integer> instructionValueMap;
 
     //Array to maintain linked list of basic operation instructions for common subexpression elimination
     //index: 0-add, 1-sub, 2-mul, 3-div, 4-const, 5-cmp
     InstructionLinkedList[] dominatorTree;
+    //indicates whether current block is a while block
+    boolean whileBlock;
+    //indicates the index where phi instruction should be added
+    int phiIndex;
     public BasicBlock() {
         instructions = new ArrayList<>();
         valueInstructionMap = new HashMap<>();
@@ -28,9 +30,9 @@ public class BasicBlock {
         declaredVariables=new ArrayList<>();
         assignedVariables=new HashSet<>();
         dominatorTree=new InstructionLinkedList[6];
-        redundantIndex = new ArrayList<>();
-        instructionUsage = ArrayListMultimap.create();
         instructionValueMap = ArrayListMultimap.create();
+        phiIndex=0;
+        whileBlock=false;
     }
 
     Instruction getLastInstruction(){

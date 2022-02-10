@@ -2,13 +2,11 @@ public class Instruction {
     Operators operator;
     Operand firstOp;
     Operand secondOp;
-    boolean duplicate;
 
     public Instruction(Operators operator, Operand firstOp, Operand secondOp) {
         this.operator = operator;
         this.firstOp = firstOp;
         this.secondOp = secondOp;
-        this.duplicate = false;
     }
 
     public Instruction(Operators operator){
@@ -21,5 +19,11 @@ public class Instruction {
         this.operator = operator;
         this.firstOp = opr;
         secondOp = null;
+    }
+
+    public Instruction(Instruction instruction){
+        this.operator=instruction.operator;
+        this.firstOp=instruction.firstOp;
+        this.secondOp= instruction.secondOp;
     }
 }
