@@ -138,7 +138,7 @@ public class Parser {
                     irTree.current.instructions.add(op.valGenerator);
                 }
                 Instruction valueGenerator = createPhiInstructionSingleVar(irTree, left.id, op);
-                //op = new Operand(op.constant, op.constVal, valueGenerator, op.id);
+                op = new Operand(op.constant, op.constVal, valueGenerator, op.id);
                 updateBlockInstructions(parent, left.id, valueGenerator);
                 updateBlockInstructions(irTree.current, left.id, valueGenerator);
             }
