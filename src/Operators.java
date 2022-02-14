@@ -5,6 +5,9 @@ public enum Operators {
     div,
     constant,
     cmp,
+    read,
+    write,
+    writeNL,
     neg,
     adda,
     load,
@@ -17,8 +20,5 @@ public enum Operators {
     ble,
     blt,
     bge,
-    bgt,
-    read,
-    write,
-    writeNL
+    bgt
 }

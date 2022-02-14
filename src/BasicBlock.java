@@ -16,7 +16,7 @@ public class BasicBlock {
     Multimap<Instruction, Integer> instructionValueMap;
 
     //Array to maintain linked list of basic operation instructions for common subexpression elimination
-    //index: 0-add, 1-sub, 2-mul, 3-div, 4-const, 5-cmp
+    //index: 0-add, 1-sub, 2-mul, 3-div, 4-const, 5-cmp, 6-read, 7-write, 8-writeNL
     InstructionLinkedList[] dominatorTree;
     //indicates whether current block is a while block
     boolean whileBlock;
@@ -29,7 +29,7 @@ public class BasicBlock {
         childBlocks=new ArrayList<>();
         declaredVariables=new ArrayList<>();
         assignedVariables=new HashSet<>();
-        dominatorTree=new InstructionLinkedList[6];
+        dominatorTree=new InstructionLinkedList[9];
         instructionValueMap = ArrayListMultimap.create();
         phiIndex=0;
         whileBlock=false;

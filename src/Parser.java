@@ -76,9 +76,9 @@ public class Parser {
             if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.endingCurlyBracketDefaultId.ordinal()) {
                 break; //if ; was the last optional terminating semicolon before ; stop parsing
             }
-            if (token.kind == TokenKind.reservedWord && (token.id == ReservedWords.elseDefaultId.ordinal() || token.id == ReservedWords.fiDefaultId.ordinal() || token.id == ReservedWords.odDefaultId.ordinal())) {
-                break; //if ; was the last optional terminating semicolon before else, or fi, or od stop parsing
-            }
+//            if (token.kind == TokenKind.reservedWord && (token.id == ReservedWords.elseDefaultId.ordinal() || token.id == ReservedWords.fiDefaultId.ordinal() || token.id == ReservedWords.odDefaultId.ordinal())) {
+//                break; //if ; was the last optional terminating semicolon before else, or fi, or od stop parsing
+//            }
             statement(irTree);
         }
     }
@@ -89,7 +89,10 @@ public class Parser {
             //throw error
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "reserved word");
         }
-
+        if (token.id == ReservedWords.fiDefaultId.ordinal() || token.id == ReservedWords.odDefaultId.ordinal()) {
+            //token = lexer.nextToken();
+            return;
+        }
         if (token.id == ReservedWords.letDefaultId.ordinal()) {
             token = lexer.nextToken();
             assignment(irTree);
@@ -149,8 +152,9 @@ public class Parser {
     }
 
     private Operand funcCall(IntermediateTree irTree) throws SyntaxException, IOException { //do later
+
         if (token.kind == TokenKind.reservedWord) {
-            if (token.id == ReservedWords.inputNumDefaultId.ordinal()) {
+            if (token.id == ReservedWords.InputNumDefaultId.ordinal()) {
                 Operators ops = Operators.read;
                 Instruction readInstr = new Instruction(ops);
 
@@ -165,7 +169,7 @@ public class Parser {
                 Operand ret = new Operand(true, -1, readInstr, -1);
                 return ret;
                 //return operand
-            } else if (token.id == ReservedWords.outputNumDefaultId.ordinal()) {
+            } else if (token.id == ReservedWords.OutputNumDefaultId.ordinal()) {
                 Operators ops = Operators.write;
                 token = lexer.nextToken();
                 token = lexer.nextToken();
@@ -213,7 +217,8 @@ public class Parser {
                     //put in block
                 }
                 token = lexer.nextToken();
-            } else if (token.id == ReservedWords.outputNewLineDefaultId.ordinal()) {
+                token = lexer.nextToken();
+            } else if (token.id == ReservedWords.OutputNewLineDefaultId.ordinal()) {
                 Operators ops = Operators.writeNL;
                 Instruction writeNLInstr = new Instruction(ops);
 
@@ -234,14 +239,15 @@ public class Parser {
 
     private void IfStatement(IntermediateTree irTree) throws SyntaxException, IOException {
         relation(irTree);
+        BasicBlock parentBlock = irTree.current;
         if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.thenDefaultId.ordinal()) {
             token = lexer.nextToken();
             BasicBlock thenBlock = new BasicBlock();
-            thenBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
-            thenBlock.dominatorTree = irTree.current.dominatorTree.clone();
-            thenBlock.declaredVariables.addAll(irTree.current.declaredVariables);
-            thenBlock.parentBlocks.add(irTree.current);
-            irTree.current.childBlocks.add(thenBlock);
+            thenBlock.valueInstructionMap.putAll(parentBlock.valueInstructionMap);
+            thenBlock.dominatorTree = parentBlock.dominatorTree.clone();
+            thenBlock.declaredVariables.addAll(parentBlock.declaredVariables);
+            thenBlock.parentBlocks.add(parentBlock);
+            parentBlock.childBlocks.add(thenBlock);
             irTree.current = thenBlock;
             statSequence(irTree);
 
@@ -258,22 +264,21 @@ public class Parser {
         if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.elseDefaultId.ordinal()) {
             token = lexer.nextToken();
             BasicBlock elseBlock = new BasicBlock();
-            elseBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
-            elseBlock.dominatorTree = irTree.current.dominatorTree.clone();
-            elseBlock.declaredVariables.addAll(irTree.current.declaredVariables);
-            irTree.current = irTree.current.parentBlocks.get(0);
-            elseBlock.parentBlocks.add(irTree.current);
-            irTree.current.childBlocks.add(elseBlock);
+            elseBlock.valueInstructionMap.putAll(parentBlock.valueInstructionMap);
+            elseBlock.dominatorTree = parentBlock.dominatorTree.clone();
+            elseBlock.declaredVariables.addAll(parentBlock.declaredVariables);
+            elseBlock.parentBlocks.add(parentBlock);
+            parentBlock.childBlocks.add(elseBlock);
             irTree.current = elseBlock;
             statSequence(irTree);
         } else { //empty else block
             BasicBlock elseBlock = new BasicBlock();
-            elseBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
-            elseBlock.dominatorTree = irTree.current.dominatorTree.clone();
-            elseBlock.declaredVariables.addAll(irTree.current.declaredVariables);
+            elseBlock.valueInstructionMap.putAll(parentBlock.valueInstructionMap);
+            elseBlock.dominatorTree = parentBlock.dominatorTree.clone();
+            elseBlock.declaredVariables.addAll(parentBlock.declaredVariables);
             irTree.current = irTree.current.parentBlocks.get(0);
-            elseBlock.parentBlocks.add(irTree.current);
-            irTree.current.childBlocks.add(elseBlock);
+            elseBlock.parentBlocks.add(parentBlock);
+            parentBlock.childBlocks.add(elseBlock);
             irTree.current = elseBlock;
         }
         if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.fiDefaultId.ordinal()) {
@@ -287,14 +292,17 @@ public class Parser {
                 //get all variables which were assigned in if block and else block
                 joinBlock.assignedVariables.addAll(block.assignedVariables);
                 joinBlock.declaredVariables.addAll(block.declaredVariables);
+                joinBlock.valueInstructionMap.putAll(block.valueInstructionMap);
             }
             //create phi instructions for changed variables
             int lastIndex = Math.max((joinBlock.instructions.size() - 1), 0);
             createPhiInstructions(joinBlock, lastIndex);
+            irTree.current=joinBlock;
         } else {
             //error
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "fi");
         }
+        //token = lexer.nextToken();
     }
 
     private void whileStatement(IntermediateTree irTree) throws SyntaxException, IOException {
@@ -551,6 +559,7 @@ public class Parser {
         } else if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.callDefaultId.ordinal()) {
             token = lexer.nextToken();
             result = funcCall(irTree);
+            token = lexer.nextToken();
         }
         return result;
     }

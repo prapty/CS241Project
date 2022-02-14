@@ -17,10 +17,10 @@ public class Lexer {
 
     Token nextToken() throws IOException, SyntaxException {
         Token tok = new Token();
-        if (sym == ' ' || sym == '\n' || sym == '\r') {
+        if (sym == ' ' || sym == '\n' || sym == '\r' || sym == '\t') {
             sym = reader.next();
             tok = nextToken();
-        } else if (sym >= 'a' && sym <= 'z') {
+        } else if ((sym >= 'a' && sym <= 'z')||(sym >= 'A' && sym <= 'Z')) {
             tok = getWord();
         } else if (sym >= '0' && sym <= '9') {
             tok = getNumber();
@@ -37,7 +37,7 @@ public class Lexer {
     private Token getWord() throws IOException { //check if reserved word or identifier, return token
         String word = "" + sym;
         sym = reader.next();
-        while ((sym >= '0' && sym <= '9') || (sym >= 'a' && sym <= 'z')) {
+        while ((sym >= '0' && sym <= '9') || (sym >= 'a' && sym <= 'z') || (sym >= 'A' && sym <= 'Z')) {
             word += sym;
             sym = reader.next();
         }
