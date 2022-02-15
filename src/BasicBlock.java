@@ -14,6 +14,7 @@ public class BasicBlock {
     // Join block has multiple parents. Use phi for them. All other blocks have single parents
     Map<Integer, Instruction> valueInstructionMap;
     Multimap<Instruction, Integer> instructionValueMap;
+    Map<Integer, Instruction> nestedValueInstructionMap;
 
     //Array to maintain linked list of basic operation instructions for common subexpression elimination
     //index: 0-add, 1-sub, 2-mul, 3-div, 4-const, 5-cmp, 6-read, 7-write, 8-writeNL
@@ -25,6 +26,7 @@ public class BasicBlock {
     public BasicBlock() {
         instructions = new ArrayList<>();
         valueInstructionMap = new HashMap<>();
+        nestedValueInstructionMap = new HashMap<>();
         parentBlocks=new ArrayList<>();
         childBlocks=new ArrayList<>();
         declaredVariables=new ArrayList<>();

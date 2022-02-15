@@ -1,7 +1,5 @@
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 public class Parser {
     Lexer lexer;
@@ -89,7 +87,7 @@ public class Parser {
             //throw error
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "reserved word");
         }
-        if (token.id == ReservedWords.fiDefaultId.ordinal() || token.id == ReservedWords.odDefaultId.ordinal()) {
+        if (token.id == ReservedWords.fiDefaultId.ordinal() || token.id == ReservedWords.odDefaultId.ordinal() || token.id == ReservedWords.elseDefaultId.ordinal()) {
             //token = lexer.nextToken();
             return;
         }
@@ -623,29 +621,43 @@ public class Parser {
     }
 
     private void createPhiInstructions(BasicBlock joinBlock, int index) {
-        for (Integer identity : joinBlock.assignedVariables) {
-            for (int i = 0; i < joinBlock.parentBlocks.size(); i++) {
-                BasicBlock parentBlock = joinBlock.parentBlocks.get(i);
-                Operand op = new Operand(false, 0, parentBlock.valueInstructionMap.get(identity), identity);
-                if (i == 0) {
-                    Instruction phiInstruction = new Instruction(Operators.phi, op, null);
-                    joinBlock.instructions.add(index, phiInstruction);
+        Map<Integer, Instruction> updatedMap = new HashMap<>();
+        for (int i = 0; i < joinBlock.parentBlocks.size(); i++) {
+            BasicBlock parentBlock = joinBlock.parentBlocks.get(i);
+            if(parentBlock.nestedValueInstructionMap.size()>0){
+                for(int identity: parentBlock.nestedValueInstructionMap.keySet()){
+                    Operand firstOp = new Operand(false, 0, parentBlock.nestedValueInstructionMap.get(identity), identity);
+                    Operand secondOp = new Operand(false, 0, parentBlock.valueInstructionMap.get(identity), identity);
+                    Instruction phiInstruction = new Instruction(Operators.phi, firstOp, secondOp);
+                    joinBlock.instructions.add(phiInstruction);
                     joinBlock.valueInstructionMap.put(identity, phiInstruction);
-                } else {
-                    Instruction lastInstruction = joinBlock.getAnyInstruction(index);
-                    if (lastInstruction.secondOp == null) {
-                        lastInstruction.secondOp = op;
-                        joinBlock.setLastInstruction(lastInstruction);
-                    } else {
-                        Operand firstOp = new Operand(false, 0, lastInstruction, identity);
-                        Instruction newInstruction = new Instruction(Operators.phi, firstOp, op);
-                        joinBlock.instructions.add(index, newInstruction);
-                        joinBlock.valueInstructionMap.put(identity, newInstruction);
-                    }
-                    index++;
+                    parentBlock.nestedValueInstructionMap.put(identity, phiInstruction);
+                    updatedMap.put(identity, phiInstruction);
                 }
             }
         }
+
+        for (Integer identity : joinBlock.assignedVariables) {
+            BasicBlock ifParent = joinBlock.parentBlocks.get(0);
+            Instruction ifValueGenerator = ifParent.nestedValueInstructionMap.get(identity);
+            if(ifValueGenerator==null){
+                ifValueGenerator = ifParent.valueInstructionMap.get(identity);
+            }
+            Operand firstOp = new Operand(false, 0, ifValueGenerator, identity);
+
+            BasicBlock elseParent = joinBlock.parentBlocks.get(1);
+            Instruction elseValueGenerator = elseParent.nestedValueInstructionMap.get(identity);
+            if(elseValueGenerator==null){
+                elseValueGenerator = elseParent.valueInstructionMap.get(identity);
+            }
+            Operand secondOp = new Operand(false, 0, elseValueGenerator, identity);
+            Instruction phiInstruction = new Instruction(Operators.phi, firstOp, secondOp);
+            joinBlock.instructions.add(phiInstruction);
+            joinBlock.valueInstructionMap.put(identity, phiInstruction);
+            updatedMap.put(identity, phiInstruction);
+        }
+        BasicBlock outerParent = joinBlock.parentBlocks.get(0).parentBlocks.get(0);
+        outerParent.nestedValueInstructionMap = updatedMap;
     }
 
     private Instruction createPhiInstructionSingleVar(IntermediateTree irTree, int identity, Operand whileOp) {
