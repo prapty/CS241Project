@@ -1,40 +1,40 @@
 public enum ReservedWords {
-    letDefaultId,
-    callDefaultId,
-    ifDefaultId,
-    thenDefaultId,
-    elseDefaultId,
-    fiDefaultId,
-    whileDefaultId,
-    doDefaultId,
-    odDefaultId,
-    returnDefaultId,
-    varDefaultId,
-    arrayDefaultId,
-    voidDefaultId,
-    functionDefaultId,
-    mainDefaultId,
-    InputNumDefaultId,
-    OutputNumDefaultId,
-    OutputNewLineDefaultId,
-    equalToDefaultId,
-    notEqualToDefaultId,
-    lessThanDefaultId,
-    lessThanOrEqualToDefaultId,
-    greaterThanDefaultId,
-    greaterThanOrEqualToDefaultId,
-    startingFirstBracketDefaultId,
-    endingFirstBracketDefaultId,
-    startingThirdBracketDefaultId,
-    endingThirdBracketDefaultId,
-    startingCurlyBracketDefaultId,
-    endingCurlyBracketDefaultId,
-    plusDefaultId,
-    minusDefaultId,
-    mulDefaultId,
-    divDefaultId,
-    assignmentSymbolDefaultId,
-    commaDefaultId,
-    semicolonDefaultId,
-    dotDefaultId,
+    letDefaultId, //id=0
+    callDefaultId, //id=1
+    ifDefaultId,    //id=2
+    thenDefaultId, //id=3
+    elseDefaultId, //id=4
+    fiDefaultId, //id=5
+    whileDefaultId, //id=6
+    doDefaultId, //id=7
+    odDefaultId, //id=8
+    returnDefaultId, //id=9
+    varDefaultId, //id=10
+    arrayDefaultId, //id=11
+    voidDefaultId, //id=12
+    functionDefaultId, //id=13
+    mainDefaultId, //id=14
+    InputNumDefaultId, //id=15
+    OutputNumDefaultId, //id=16
+    OutputNewLineDefaultId, //id=17
+    equalToDefaultId, //id=18
+    notEqualToDefaultId, //id=19
+    lessThanDefaultId, //id=20
+    lessThanOrEqualToDefaultId, //id=21
+    greaterThanDefaultId, //id=22
+    greaterThanOrEqualToDefaultId, //id=23
+    startingFirstBracketDefaultId, //id=24
+    endingFirstBracketDefaultId, //id=25
+    startingThirdBracketDefaultId, //id=26
+    endingThirdBracketDefaultId, //id=27
+    startingCurlyBracketDefaultId, //id=28
+    endingCurlyBracketDefaultId, //id=29
+    plusDefaultId, //id=30
+    minusDefaultId, //id=31
+    mulDefaultId, //id=32
+    divDefaultId, //id=33
+    assignmentSymbolDefaultId, //id=34
+    commaDefaultId, //id=35
+    semicolonDefaultId, //id=36
+    dotDefaultId, //id=37
 }

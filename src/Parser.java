@@ -251,12 +251,6 @@ public class Parser {
             irTree.current = thenBlock;
             statSequence(irTree);
 
-            // create second operand to branch instruction
-            Instruction firstInstr = thenBlock.instructions.get(0);
-            Operand op = new Operand(false, 0, firstInstr, -1);
-            Instruction branch = thenBlock.parentBlocks.get(0).getLastInstruction();
-            branch.secondOp = op;
-            thenBlock.parentBlocks.get(0).setLastInstruction(branch);
         } else {
             //error
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "then");
@@ -299,6 +293,13 @@ public class Parser {
             int lastIndex = Math.max((joinBlock.instructions.size() - 1), 0);
             createPhiInstructions(joinBlock, lastIndex);
             irTree.current = joinBlock;
+
+            // create second operand to branch instruction
+            Instruction firstInstr = joinBlock.instructions.get(0);
+            Operand op = new Operand(false, 0, firstInstr, -1);
+            Instruction branch = parentBlock.getLastInstruction();
+            branch.secondOp = op;
+            parentBlock.setLastInstruction(branch);
         } else {
             //error
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "fi");
@@ -589,7 +590,7 @@ public class Parser {
             }
         }
 
-        token = lexer.nextToken();
+        //token = lexer.nextToken();
 
 
         if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
@@ -756,12 +757,20 @@ public class Parser {
             if (ifValueGenerator == null) {
                 ifValueGenerator = ifParent.valueInstructionMap.get(identity);
             }
+            if (ifValueGenerator == null) {
+                warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);
+                ifValueGenerator = assignZeroInstruction;
+            }
             Operand firstOp = new Operand(false, 0, ifValueGenerator, identity);
 
             BasicBlock elseParent = joinBlock.parentBlocks.get(1);
             Instruction elseValueGenerator = elseParent.nestedValueInstructionMap.get(identity);
             if (elseValueGenerator == null) {
                 elseValueGenerator = elseParent.valueInstructionMap.get(identity);
+            }
+            if (elseValueGenerator == null) {
+                warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);
+                elseValueGenerator = assignZeroInstruction;
             }
             Operand secondOp = new Operand(false, 0, elseValueGenerator, identity);
             Instruction phiInstruction = new Instruction(Operators.phi, firstOp, secondOp);
