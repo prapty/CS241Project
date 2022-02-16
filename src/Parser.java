@@ -284,8 +284,8 @@ public class Parser {
         if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.fiDefaultId.ordinal()) {
             token = lexer.nextToken();
             BasicBlock joinBlock = new BasicBlock();
-            //irTree.current = parentBlock;
-            irTree.current = irTree.current.parentBlocks.get(0);
+            irTree.current = parentBlock;
+            //irTree.current = irTree.current.parentBlocks.get(0);
             for (int i = 0; i < irTree.current.childBlocks.size(); i++) {
                 BasicBlock block = irTree.current.childBlocks.get(i);
                 joinBlock.parentBlocks.add(block);
@@ -638,8 +638,15 @@ public class Parser {
                     Operand secondOp = new Operand(false, 0, parentBlock.valueInstructionMap.get(identity), identity);
                     Instruction phiInstruction = new Instruction(Operators.phi, firstOp, secondOp);
                     joinBlock.instructions.add(phiInstruction);
-                    joinBlock.valueInstructionMap.put(identity, phiInstruction);
                     parentBlock.nestedValueInstructionMap.put(identity, phiInstruction);
+                    Instruction anotherPhi = updatedMap.get(identity);
+                    if(anotherPhi != null){
+                        Operand oldPhi = new Operand(false, 0, anotherPhi, identity);
+                        Operand newPhi = new Operand(false, 0, phiInstruction, identity);
+                        phiInstruction = new Instruction(Operators.phi, oldPhi, newPhi);
+                        joinBlock.instructions.add(phiInstruction);
+                    }
+                    joinBlock.valueInstructionMap.put(identity, phiInstruction);
                     updatedMap.put(identity, phiInstruction);
                 }
             }
