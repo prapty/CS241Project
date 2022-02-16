@@ -1,0 +1,11 @@
+Passed:
+duplicate_assignments.smpl
+If_ComplexExpression.txt
+While_CSE.txt (Should recheck with graph)
+if_nested3.smpl
+empty_while.smpl
+if_joinboth.smpl
+simplified_computations.smpl
+
+failed:
+empty_if.smpl, if-phi-uninit.smpl - problem with branch, then block has no instruction. Cannot get first instruction of then block

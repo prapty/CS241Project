@@ -162,7 +162,9 @@ public class Parser {
                 node.previous = irTree.current.dominatorTree[ops.ordinal()];
                 irTree.current.dominatorTree[ops.ordinal()] = node;
                 token = lexer.nextToken();
-                token = lexer.nextToken();
+                if(token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()){
+                    token = lexer.nextToken();
+                }
 
                 Operand ret = new Operand(true, -1, readInstr, -1);
                 return ret;
@@ -282,6 +284,7 @@ public class Parser {
         if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.fiDefaultId.ordinal()) {
             token = lexer.nextToken();
             BasicBlock joinBlock = new BasicBlock();
+            //irTree.current = parentBlock;
             irTree.current = irTree.current.parentBlocks.get(0);
             for (int i = 0; i < irTree.current.childBlocks.size(); i++) {
                 BasicBlock block = irTree.current.childBlocks.get(i);
@@ -310,7 +313,9 @@ public class Parser {
         condBlock.dominatorTree = irTree.current.dominatorTree.clone();
         condBlock.declaredVariables.addAll(irTree.current.declaredVariables);
         condBlock.parentBlocks.add(irTree.current);
+        condBlock.whileBlock=true;
         irTree.current.childBlocks.add(condBlock);
+
         irTree.current = condBlock;
         relation(irTree);
         if (token.kind != TokenKind.reservedWord || token.id != ReservedWords.doDefaultId.ordinal()) {
@@ -377,18 +382,19 @@ public class Parser {
             token = lexer.nextToken();
             right = Expression(irTree);
             Instruction cmp = new Instruction(ops, left, right);
-            Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[ops.ordinal()], cmp);
-
-            if (duplicate != null) {
-                cmp = duplicate;
-                irTree.current.instructions.remove(irTree.current.instructions.size() - 1);
-            } else {
-                irTree.current.instructions.add(cmp);
-                InstructionLinkedList node = new InstructionLinkedList();
-                node.value = cmp;
-                node.previous = irTree.current.dominatorTree[ops.ordinal()];
-                irTree.current.dominatorTree[ops.ordinal()] = node;
-            }
+            irTree.current.instructions.add(cmp);
+//            Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[ops.ordinal()], cmp);
+//
+//            if (duplicate != null) {
+//                cmp = duplicate;
+//                irTree.current.instructions.remove(irTree.current.instructions.size() - 1);
+//            } else {
+//                irTree.current.instructions.add(cmp);
+//                InstructionLinkedList node = new InstructionLinkedList();
+//                node.value = cmp;
+//                node.previous = irTree.current.dominatorTree[ops.ordinal()];
+//                irTree.current.dominatorTree[ops.ordinal()] = node;
+//            }
             Operand opcmp = new Operand(false, 0, cmp, -1);
             if (relOp.id == ReservedWords.equalToDefaultId.ordinal()) {
                 Instruction branch = new Instruction(Operators.beq, opcmp, null);
@@ -557,7 +563,9 @@ public class Parser {
         } else if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.callDefaultId.ordinal()) {
             token = lexer.nextToken();
             result = funcCall(irTree);
-            token = lexer.nextToken();
+            if(token.id != ReservedWords.semicolonDefaultId.ordinal()){
+                token = lexer.nextToken();
+            }
         }
         return result;
     }
