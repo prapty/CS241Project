@@ -6,6 +6,10 @@ public class Main {
         try {
             Parser parser = new Parser(fileName);
             IntermediateTree intermediateTree = parser.getIntermediateRepresentation();
+
+            String outputFileName = "outputCodeDot.dot";
+            Dot dot = new Dot(outputFileName);
+            dot.makeDotGraph(intermediateTree);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (SyntaxException e) {
