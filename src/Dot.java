@@ -4,6 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 public class Dot {
 
@@ -17,28 +18,29 @@ public class Dot {
         ArrayList<String> lines = new ArrayList<String>();
         ArrayList<String> branchLines = new ArrayList<>();
         lines.add("digraph G {");
-        ArrayList<BasicBlock> blocks = new ArrayList<>();
+        updateInstructionID(irTree);
+        LinkedList<BasicBlock> blocks = new LinkedList<>();
         blocks.add(irTree.constants);
+        blocks.get(0).visbranch = true;
         while (!blocks.isEmpty()) {
             makeBlockCode(blocks.get(0), lines, branchLines);
-//            if (!blocks.get(0).instructions.isEmpty()) {
-//                Instruction i = blocks.get(0).getLastInstruction();
-//                if (i.operator.toString().charAt(0) == 'b' && !i.operator.toString().equals("bra")) {
-//                    branchSO(i, blocks.get(0), lines);
-//                } else if (i.operator.toString().equals("bra")) {
-//                    branchBRA(i, blocks.get(0), lines);
-//                } else {
-//                    fallThrough(blocks.get(0), lines);
-//                }
-//            }
-            for (BasicBlock b : blocks.get(0).dominatorBlocks) {
-                String domLine = "bb" + b.IDNum + ":b -> bb" + blocks.get(0).IDNum + ":b [color=blue, style=dotted, label=\"dom\"]";
-                lines.add(domLine);
+//            for (BasicBlock b : blocks.get(0).dominatorBlocks) {
+            if (blocks.get(0).dominatorBlock != null) {
+                BasicBlock bl = blocks.get(0).dominatorBlock;
+                while (bl != null) {
+                    String domLine = "bb" + bl.IDNum + ":b -> bb" + blocks.get(0).IDNum + ":b [color=blue, style=dotted, label=\"dom\"]";
+                    branchLines.add(domLine);
+                    bl = bl.dominatorBlock;
+                }
             }
             for (BasicBlock b : blocks.get(0).childBlocks) {
-                blocks.add(b);
+                if (!b.visbranch) {
+                    blocks.add(b);
+                    b.visbranch = true;
+                }
+                ;
             }
-            blocks.remove(0);
+            blocks.poll();
         }
         lines.addAll(branchLines);
         lines.add("}");
@@ -47,13 +49,28 @@ public class Dot {
         Files.write(file, lines, StandardCharsets.UTF_8);
     }
 
-    private void fallThrough(BasicBlock basicBlock, BasicBlock fallBlock, ArrayList<String> lines, ArrayList<String> branchLines) {
-        if (!basicBlock.childBlocks.isEmpty()) {
-            for (BasicBlock b : basicBlock.childBlocks) {
-                String fallThroughLine = "bb" + basicBlock.IDNum + ":s -> bb" + fallBlock.IDNum + ":n [label=\"fall-through\"];";
-                branchLines.add(fallThroughLine);
+    private void updateInstructionID(IntermediateTree irTree) {
+        LinkedList<BasicBlock> blocks = new LinkedList<>();
+        blocks.add(irTree.constants);
+        blocks.get(0).vis = true;
+        while (!blocks.isEmpty()) {
+            for (Instruction i : blocks.get(0).instructions) {
+                i.IDNum = Instruction.instrNum;
+                Instruction.instrNum++;
             }
+            for (BasicBlock b : blocks.get(0).childBlocks) {
+                if (!b.vis) {
+                    blocks.add(b);
+                    b.vis = true;
+                }
+            }
+            blocks.poll();
         }
+    }
+
+    private void fallThrough(BasicBlock basicBlock, BasicBlock fallBlock, ArrayList<String> lines, ArrayList<String> branchLines) {
+        String fallThroughLine = "bb" + basicBlock.IDNum + ":s -> bb" + fallBlock.IDNum + ":n [label=\"fall-through\"];";
+        branchLines.add(fallThroughLine);
     }
 
     private void branchBRA(Instruction i, BasicBlock basicBlock, ArrayList<String> lines, ArrayList<String> branchLines) {
@@ -88,7 +105,7 @@ public class Dot {
         lines.add("bb" + basicBlock.IDNum + " [shape=record, label=\"<b>BB" + basicBlock.IDNum + "|");
         String instrline = "{";
         for (Instruction i : basicBlock.instructions) {
-            i.IDNum = Instruction.instrNum;
+//            i.IDNum = Instruction.instrNum;
             if (i.operator.toString().charAt(0) == 'b' && !i.operator.toString().equals("bra")) {
                 branchSO(i, basicBlock, lines, branchLines);
             } else if (i.operator.toString().equals("bra")) {
@@ -99,7 +116,7 @@ public class Dot {
                 }
             }
             instrline += i.IDNum + ": " + i.toString() + "|";
-            Instruction.instrNum++;
+//            Instruction.instrNum++;
         }
 
         instrline = instrline.substring(0, instrline.length() - 1);

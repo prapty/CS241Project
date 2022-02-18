@@ -9,24 +9,18 @@ public class Instruction {
         this.operator = operator;
         this.firstOp = firstOp;
         this.secondOp = secondOp;
-//        IDNum = instrNum;
-//        instrNum++;
     }
 
     public Instruction(Operators operator) {
         this.operator = operator;
         firstOp = null;
         secondOp = null;
-//        IDNum = instrNum;
-//        instrNum++;
     }
 
     public Instruction(Operators operator, Operand opr) {
         this.operator = operator;
         this.firstOp = opr;
         secondOp = null;
-//        IDNum = instrNum;
-//        instrNum++;
     }
 
     public Instruction(Instruction instruction) {

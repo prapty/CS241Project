@@ -11,5 +11,7 @@ public class IntermediateTree {
         current=new BasicBlock();
         start=current;
         constants.childBlocks.add(start);
+        start.parentBlocks.add(constants);
+        start.dominatorBlock = constants;
     }
 }

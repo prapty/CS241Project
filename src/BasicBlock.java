@@ -27,7 +27,10 @@ public class BasicBlock {
     //indicates the index where phi instruction should be added
     int phiIndex;
 
-    HashSet<BasicBlock> dominatorBlocks;
+    //variables for creating dot file, vis/visbranch to not go through same block twice
+    BasicBlock dominatorBlock;
+    boolean vis;
+    boolean visbranch;
 
     public BasicBlock() {
         instructions = new ArrayList<>();
@@ -41,9 +44,11 @@ public class BasicBlock {
         instructionValueMap = ArrayListMultimap.create();
         phiIndex = 0;
         whileBlock = false;
-        dominatorBlocks = new HashSet<>();
+        dominatorBlock = null;
         IDNum = instrNum;
         instrNum++;
+        vis = false;
+        visbranch = false;
     }
 
     Instruction getLastInstruction() {
