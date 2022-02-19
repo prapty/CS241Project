@@ -163,7 +163,7 @@ public class Parser {
 //                node.previous = irTree.current.dominatorTree[ops.ordinal()];
 //                irTree.current.dominatorTree[ops.ordinal()] = node;
                 token = lexer.nextToken();
-                if(token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()){
+                if (token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
                     token = lexer.nextToken();
                 }
 
@@ -232,7 +232,7 @@ public class Parser {
 //                node.previous = irTree.current.dominatorTree[ops.ordinal()];
 //                irTree.current.dominatorTree[ops.ordinal()] = node;
                 token = lexer.nextToken();
-                if(token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()){
+                if (token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
                     token = lexer.nextToken();
                 }
             } else {
@@ -247,6 +247,7 @@ public class Parser {
         relation(irTree);
         BasicBlock parentBlock = irTree.current;
         BasicBlock thenBlock = new BasicBlock();
+        BasicBlock joinBlock = new BasicBlock();
         if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.thenDefaultId.ordinal()) {
             token = lexer.nextToken();
             thenBlock.valueInstructionMap.putAll(parentBlock.valueInstructionMap);
@@ -262,7 +263,10 @@ public class Parser {
 
             statSequence(irTree);
 
-            if(thenBlock.instructions.isEmpty()){
+            joinBlock.parentBlocks.add(irTree.current);
+            irTree.current.childBlocks.add(joinBlock);
+
+            if (thenBlock.instructions.isEmpty()) {
                 Instruction emptyInstr = new Instruction(Operators.empty);
                 thenBlock.instructions.add(emptyInstr);
             }
@@ -298,7 +302,10 @@ public class Parser {
 //            elseBlock.dominatorBlocks.add(parentBlock);
         }
 
-        if(elseBlock.instructions.isEmpty()){
+        joinBlock.parentBlocks.add(irTree.current);
+        irTree.current.childBlocks.add(joinBlock);
+
+        if (elseBlock.instructions.isEmpty()) {
             Instruction emptyInstr = new Instruction(Operators.empty);
             elseBlock.instructions.add(emptyInstr);
         }
@@ -310,15 +317,20 @@ public class Parser {
 
         if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.fiDefaultId.ordinal()) {
             token = lexer.nextToken();
-            BasicBlock joinBlock = new BasicBlock();
+//            BasicBlock joinBlock = new BasicBlock();
             joinBlock.dominatorBlock = parentBlock;
             irTree.current = parentBlock;
             //irTree.current = irTree.current.parentBlocks.get(0);
             for (int i = 0; i < irTree.current.childBlocks.size(); i++) {
                 BasicBlock block = irTree.current.childBlocks.get(i);
-                joinBlock.parentBlocks.add(block);
-                block.childBlocks.add(joinBlock);
+//                if (block.childBlocks.size() < 1) {
+//                    joinBlock.parentBlocks.add(block);
+//                    block.childBlocks.add(joinBlock);
+//                }
                 //get all variables which were assigned in if block and else block
+
+
+                //may need to put this somewhere else, with joinblock.parentBlocks.add
                 joinBlock.assignedVariables.addAll(block.assignedVariables);
                 joinBlock.declaredVariables.addAll(block.declaredVariables);
                 joinBlock.valueInstructionMap.putAll(block.valueInstructionMap);
@@ -332,7 +344,7 @@ public class Parser {
 //            joinBlock.dominatorBlocks.add(parentBlock);
 
 
-            if(joinBlock.instructions.isEmpty()){
+            if (joinBlock.instructions.isEmpty()) {
                 Instruction emptyInstr = new Instruction(Operators.empty);
                 joinBlock.instructions.add(emptyInstr);
             }
@@ -341,7 +353,7 @@ public class Parser {
             Instruction first = joinBlock.instructions.get(0);
             Operand opp = new Operand(false, 0, first, -1);
             Instruction bra = new Instruction(Operators.bra, opp);
-            thenBlock.instructions.add(bra);
+            joinBlock.parentBlocks.get(0).instructions.add(bra);
 
 //            branch.secondOp = op;
 //            parentBlock.setLastInstruction(branch);
@@ -359,7 +371,7 @@ public class Parser {
         condBlock.dominatorTree = irTree.current.dominatorTree.clone();
         condBlock.declaredVariables.addAll(irTree.current.declaredVariables);
         condBlock.parentBlocks.add(irTree.current);
-        condBlock.whileBlock=true;
+        condBlock.whileBlock = true;
         irTree.current.childBlocks.add(condBlock);
 
         irTree.current = condBlock;
@@ -690,7 +702,7 @@ public class Parser {
         } else if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.callDefaultId.ordinal()) {
             token = lexer.nextToken();
             result = funcCall(irTree);
-            if(token.id != ReservedWords.semicolonDefaultId.ordinal()){
+            if (token.id != ReservedWords.semicolonDefaultId.ordinal()) {
                 token = lexer.nextToken();
             }
         }
@@ -789,7 +801,7 @@ public class Parser {
                     joinBlock.instructions.add(phiInstruction);
                     parentBlock.nestedValueInstructionMap.put(identity, phiInstruction);
                     Instruction anotherPhi = updatedMap.get(identity);
-                    if(anotherPhi != null){
+                    if (anotherPhi != null) {
                         Operand oldPhi = new Operand(false, 0, anotherPhi, identity);
                         Operand newPhi = new Operand(false, 0, phiInstruction, identity);
                         phiInstruction = new Instruction(Operators.phi, oldPhi, newPhi);
