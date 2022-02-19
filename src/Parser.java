@@ -265,6 +265,9 @@ public class Parser {
 
             joinBlock.parentBlocks.add(irTree.current);
             irTree.current.childBlocks.add(joinBlock);
+            joinBlock.assignedVariables.addAll(irTree.current.assignedVariables);
+            joinBlock.declaredVariables.addAll(irTree.current.declaredVariables);
+            joinBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
 
             if (thenBlock.instructions.isEmpty()) {
                 Instruction emptyInstr = new Instruction(Operators.empty);
@@ -304,6 +307,9 @@ public class Parser {
 
         joinBlock.parentBlocks.add(irTree.current);
         irTree.current.childBlocks.add(joinBlock);
+        joinBlock.assignedVariables.addAll(irTree.current.assignedVariables);
+        joinBlock.declaredVariables.addAll(irTree.current.declaredVariables);
+        joinBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
 
         if (elseBlock.instructions.isEmpty()) {
             Instruction emptyInstr = new Instruction(Operators.empty);
@@ -329,8 +335,6 @@ public class Parser {
 //                }
                 //get all variables which were assigned in if block and else block
 
-
-                //may need to put this somewhere else, with joinblock.parentBlocks.add
                 joinBlock.assignedVariables.addAll(block.assignedVariables);
                 joinBlock.declaredVariables.addAll(block.declaredVariables);
                 joinBlock.valueInstructionMap.putAll(block.valueInstructionMap);
