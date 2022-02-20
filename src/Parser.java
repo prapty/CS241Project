@@ -178,7 +178,7 @@ public class Parser {
                 if (token.kind == TokenKind.number) {
                     writtenNum = new Operand(true, token.val, null, -1);
                     Instruction constantInstruction = new Instruction(Operators.constant, writtenNum, writtenNum);
-                    Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[Operators.constant.ordinal()], constantInstruction);
+                    Instruction duplicate = getDuplicateInstruction(irTree.constants.dominatorTree[Operators.constant.ordinal()], constantInstruction);
                     if (duplicate != null) {
                         writtenNum.valGenerator = duplicate;
                     } else {
@@ -188,8 +188,8 @@ public class Parser {
                         writtenNum = new Operand(true, token.val, constantInstruction, -1);
                         InstructionLinkedList node = new InstructionLinkedList();
                         node.value = constantInstruction;
-                        node.previous = irTree.current.dominatorTree[Operators.constant.ordinal()];
-                        irTree.current.dominatorTree[Operators.constant.ordinal()] = node;
+                        node.previous = irTree.constants.dominatorTree[Operators.constant.ordinal()];
+                        irTree.constants.dominatorTree[Operators.constant.ordinal()] = node;
                     }
                     Instruction write = new Instruction(ops, writtenNum);
 
@@ -370,15 +370,22 @@ public class Parser {
 
     private void whileStatement(IntermediateTree irTree) throws SyntaxException, IOException {
         BasicBlock condBlock = new BasicBlock();
+        if(irTree.current.instructions.isEmpty()){
+            condBlock.dominatorTree = irTree.current.dominatorTree.clone();
+            condBlock = irTree.current;
+        } else {
         condBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
         condBlock.instructionValueMap.putAll(irTree.current.instructionValueMap);
         condBlock.dominatorTree = irTree.current.dominatorTree.clone();
         condBlock.declaredVariables.addAll(irTree.current.declaredVariables);
         condBlock.parentBlocks.add(irTree.current);
-        condBlock.whileBlock = true;
         irTree.current.childBlocks.add(condBlock);
-
         irTree.current = condBlock;
+        }
+        condBlock.whileBlock = true;
+
+
+
         relation(irTree);
         if (token.kind != TokenKind.reservedWord || token.id != ReservedWords.doDefaultId.ordinal()) {
             //error
@@ -390,20 +397,24 @@ public class Parser {
         whileBlock.dominatorTree = irTree.current.dominatorTree.clone();
         whileBlock.declaredVariables.addAll(irTree.current.declaredVariables);
         whileBlock.parentBlocks.add(irTree.current);
+//        whileBlock.childBlocks.add(condBlock);
         whileBlock.whileBlock = true;
 
         irTree.current.childBlocks.add(whileBlock);
-        irTree.current.parentBlocks.add(whileBlock);
+//        irTree.current.parentBlocks.add(whileBlock);
         //need to add phi for current (condBlock)
         irTree.current = whileBlock;
         statSequence(irTree);
 
+        irTree.current.childBlocks.add(condBlock);
+        condBlock.parentBlocks.add(irTree.current);
+
         // create second operand to branch instruction
-        Instruction firstInstr = whileBlock.instructions.get(0);
+        Instruction firstInstr = condBlock.instructions.get(0);
         Operand op = new Operand(false, 0, firstInstr, -1);
-        Instruction branch = whileBlock.parentBlocks.get(0).getLastInstruction();
-        branch.secondOp = op;
-        whileBlock.parentBlocks.get(0).setLastInstruction(branch);
+        Instruction branch = new Instruction(Operators.bra, op);
+        irTree.current.instructions.add(branch);
+
 
         if (token.kind != TokenKind.reservedWord || token.id != ReservedWords.odDefaultId.ordinal()) {
             //error
@@ -418,6 +429,17 @@ public class Parser {
         condBlock.childBlocks.add(newBlock);
         irTree.current = newBlock;
         token = lexer.nextToken();
+
+        if (newBlock.instructions.isEmpty()) {
+            Instruction emptyInstr = new Instruction(Operators.empty);
+            newBlock.instructions.add(emptyInstr);
+        }
+
+        firstInstr = newBlock.instructions.get(0);
+        Operand ops = new Operand(false, 0, firstInstr, -1);
+        Instruction branchCond = condBlock.getLastInstruction();
+        branchCond.secondOp = ops;
+        condBlock.setLastInstruction(branchCond);
     }
 
     private Operand returnStatement(IntermediateTree irTree) throws SyntaxException, IOException {
@@ -586,7 +608,7 @@ public class Parser {
 //                int index = irTree.current.instructions.size();
                 result = new Operand(true, token.val, null, -1);
                 Instruction constantInstruction = new Instruction(Operators.constant, result, result);
-                Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[Operators.constant.ordinal()], constantInstruction);
+                Instruction duplicate = getDuplicateInstruction(irTree.constants.dominatorTree[Operators.constant.ordinal()], constantInstruction);
                 if (duplicate != null) {
                     result.valGenerator = duplicate;
                 } else {
@@ -596,8 +618,8 @@ public class Parser {
                     //op.valGenerator=constantInstruction;
                     InstructionLinkedList node = new InstructionLinkedList();
                     node.value = constantInstruction;
-                    node.previous = irTree.current.dominatorTree[Operators.constant.ordinal()];
-                    irTree.current.dominatorTree[Operators.constant.ordinal()] = node;
+                    node.previous = irTree.constants.dominatorTree[Operators.constant.ordinal()];
+                    irTree.constants.dominatorTree[Operators.constant.ordinal()] = node;
                 }
 
                 Instruction negInstr = new Instruction(Operators.neg, result);
@@ -688,7 +710,7 @@ public class Parser {
                 //num
                 result = new Operand(true, token.val, null, -1);
                 Instruction constantInstruction = new Instruction(Operators.constant, result, result);
-                Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[Operators.constant.ordinal()], constantInstruction);
+                Instruction duplicate = getDuplicateInstruction(irTree.constants.dominatorTree[Operators.constant.ordinal()], constantInstruction);
                 if (duplicate != null) {
                     result.valGenerator = duplicate;
                 } else {
@@ -698,8 +720,8 @@ public class Parser {
                     //op.valGenerator=constantInstruction;
                     InstructionLinkedList node = new InstructionLinkedList();
                     node.value = constantInstruction;
-                    node.previous = irTree.current.dominatorTree[Operators.constant.ordinal()];
-                    irTree.current.dominatorTree[Operators.constant.ordinal()] = node;
+                    node.previous = irTree.constants.dominatorTree[Operators.constant.ordinal()];
+                    irTree.constants.dominatorTree[Operators.constant.ordinal()] = node;
                 }
             }
             token = lexer.nextToken();

@@ -82,6 +82,7 @@ public class Dot {
                 break;
             }
         }
+
         String branchLine = "bb" + basicBlock.IDNum + ":s -> bb" + branchBlock.IDNum + ":n [label=\"branch\"];";
         branchLines.add(branchLine);
     }
