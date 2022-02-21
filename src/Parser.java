@@ -598,6 +598,7 @@ public class Parser {
                 instruction = duplicate;
             }
             else{
+                instruction.duplicate = true;
                 irTree.current.instructions.add(instruction);
             }
         } else {
@@ -895,8 +896,9 @@ public class Parser {
         if (oldInstruction.operator == Operators.constant) {
             return oldInstruction;
         }
+        Collection<Integer> usageVariables = block.instructionValueMap.get(oldInstruction);
         Operand firstOp, secondOp;
-        if (!oldInstruction.firstOp.constant) {
+        if (oldInstruction.firstOp!=null && !oldInstruction.firstOp.constant) {
             firstOp = updateOperand(block, oldInstruction.firstOp, identity, newValueGenerator);
         } else {
             firstOp = oldInstruction.firstOp;
@@ -921,7 +923,7 @@ public class Parser {
 //                block.dominatorTree[oldInstruction.operator.ordinal()] = node;
 //            }
 //        }
-        Collection<Integer> usageVariables = block.instructionValueMap.get(oldInstruction);
+
         for (int id : usageVariables) {
             block.valueInstructionMap.put(id, updatedInstruction);
         }
@@ -932,13 +934,13 @@ public class Parser {
         Instruction valueGenerator;
         if (operand.id == identity) {
             valueGenerator = newValueGenerator;
+            operand = new Operand(false, 0, valueGenerator, identity);
         } else if (operand.id < 0) {
             valueGenerator = updateInstruction(block, operand.valGenerator, identity, newValueGenerator);
-        } else {
-            valueGenerator = operand.valGenerator;
+            operand = new Operand(false, 0, valueGenerator, operand.id);
         }
-        operand.valGenerator = valueGenerator;
-        return operand;
+
+       return operand;
 //        Operand updatedOperand = new Operand(false, 0, valueGenerator, identity);
 //        return updatedOperand;
     }

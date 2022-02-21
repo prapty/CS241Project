@@ -1,10 +1,14 @@
 main
-var a, b, c; {
-let a <- 1;
-let b <- a + 1;
-let c <- a + 1;
-while a < 10 do
-let a <- a * 1;
-let b <- a + 1;
-od;
+var a, b;
+{
+	let a <- call InputNum;
+
+	let b <- a + 1;
+
+	while a + 1 != b
+	do
+		let a <- a + 1;
+	od;
+
+	call OutputNum(a);
 }.

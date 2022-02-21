@@ -4,6 +4,7 @@ public class Instruction {
     Operand secondOp;
     int IDNum;
     static int instrNum = 1;
+    boolean duplicate;
 
     public Instruction(Operators operator, Operand firstOp, Operand secondOp) {
         this.operator = operator;

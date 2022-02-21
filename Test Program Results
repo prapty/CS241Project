@@ -1,7 +1,7 @@
 Passed:
 duplicate_assignments.smpl
 If_ComplexExpression.txt
-While_CSE.txt (Should recheck with graph)
+While_CSE.txt
 if_nested3.smpl
 empty_while.smpl
 if_joinboth.smpl
