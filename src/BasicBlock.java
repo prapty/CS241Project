@@ -24,6 +24,7 @@ public class BasicBlock {
     InstructionLinkedList[] dominatorTree;
     //indicates whether current block is a while block
     boolean whileBlock;
+    boolean makeDuplicate;
     //indicates the index where phi instruction should be added
     int phiIndex;
 

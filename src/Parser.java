@@ -148,12 +148,12 @@ public class Parser {
         irTree.current.instructionValueMap.put(op.valGenerator, left.id);
         irTree.current.valueInstructionMap.put(left.id, op.valGenerator);
         irTree.current.assignedVariables.add(left.id);
-        if(irTree.current.parentBlocks.size()>0){
-            if(irTree.current.parentBlocks.get(0).parentBlocks.size()>0){
-                BasicBlock outerParent = irTree.current.parentBlocks.get(0).parentBlocks.get(0);
-                outerParent.nestedValueInstructionMap.put(left.id, op.valGenerator);
-            }
-        }
+//        if(irTree.current.parentBlocks.size()>0){
+//            if(irTree.current.parentBlocks.get(0).parentBlocks.size()>0){
+//                BasicBlock outerParent = irTree.current.parentBlocks.get(0).parentBlocks.get(0);
+//                outerParent.nestedValueInstructionMap.put(left.id, op.valGenerator);
+//            }
+//        }
         //nestedAssignment(left.id, irTree.current.parentBlocks.get(0), op.valGenerator);
     }
 
@@ -265,6 +265,9 @@ public class Parser {
         BasicBlock parentBlock = irTree.current;
         BasicBlock thenBlock = new BasicBlock();
         BasicBlock joinBlock = new BasicBlock();
+        if(parentBlock.whileBlock){
+            thenBlock.makeDuplicate = true;
+        }
         joinBlock.dominatorTree = parentBlock.dominatorTree.clone();
         if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.thenDefaultId.ordinal()) {
             token = lexer.nextToken();
@@ -296,6 +299,9 @@ public class Parser {
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "then");
         }
         BasicBlock elseBlock = new BasicBlock();
+        if(parentBlock.whileBlock){
+            elseBlock.makeDuplicate = true;
+        }
         elseBlock.dominatorBlock = parentBlock;
         if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.elseDefaultId.ordinal()) {
             token = lexer.nextToken();
@@ -363,7 +369,15 @@ public class Parser {
             //create phi instructions for changed variables
             createPhiInstructions(joinBlock);
             irTree.current = joinBlock;
-
+            if(parentBlock.whileBlock){
+                for(int identity: joinBlock.assignedVariables){
+                    Operand phiOp = new Operand(false, 0, joinBlock.valueInstructionMap.get(identity), identity);
+                    Instruction updatedInstruction = createPhiInstructionSingleVar(parentBlock, identity, phiOp);
+                    updateBlockInstructions(parentBlock, identity, updatedInstruction);
+                    //updateBlockInstructions(thenBlock, identity, updatedInstruction);
+                    //updateBlockInstructions(elseBlock, identity, updatedInstruction);
+                }
+            }
 //            joinBlock.dominatorBlocks = parentBlock.dominatorBlocks;
 //            joinBlock.dominatorBlocks.add(parentBlock);
 
@@ -404,8 +418,6 @@ public class Parser {
         }
         condBlock.whileBlock = true;
 
-
-
         relation(irTree);
         if (token.kind != TokenKind.reservedWord || token.id != ReservedWords.doDefaultId.ordinal()) {
             //error
@@ -442,6 +454,7 @@ public class Parser {
         }
 
         BasicBlock newBlock = new BasicBlock();
+        newBlock.assignedVariables = irTree.current.assignedVariables;
         newBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
         newBlock.dominatorTree = irTree.current.dominatorTree.clone();
         newBlock.declaredVariables.addAll(irTree.current.declaredVariables);
@@ -597,7 +610,7 @@ public class Parser {
         Instruction instruction = new Instruction(operator, left, right);
         Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[operator.ordinal()], instruction);
         if (duplicate != null) {
-            if (!irTree.current.whileBlock) {
+            if (!irTree.current.whileBlock && !irTree.current.makeDuplicate) {
                 instruction = duplicate;
             }
             else{
@@ -729,7 +742,7 @@ public class Parser {
                     warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);
                     valueGenerator = assignZeroInstruction;
                 }
-                if (irTree.current.whileBlock) {
+                if (irTree.current.whileBlock || irTree.current.makeDuplicate) {
                     valueGenerator = new Instruction(valueGenerator);
                     valueGenerator.duplicate = true;
                     irTree.current.instructions.add(valueGenerator);
@@ -826,22 +839,23 @@ public class Parser {
     }
 
     private void createPhiInstructions(BasicBlock joinBlock) {
-        Map<Integer, Instruction> updatedMap = new HashMap<>();
-        for (int i = 0; i < joinBlock.parentBlocks.size(); i++) {
-            BasicBlock parentBlock = joinBlock.parentBlocks.get(i);
-            if (parentBlock.nestedValueInstructionMap.size() > 0) {
-                for (int identity : parentBlock.nestedValueInstructionMap.keySet()) {
-                    joinBlock.assignedVariables.add(identity);
-                }
-            }
-        }
+//        Map<Integer, Instruction> updatedMap = new HashMap<>();
+//        for (int i = 0; i < joinBlock.parentBlocks.size(); i++) {
+//            BasicBlock parentBlock = joinBlock.parentBlocks.get(i);
+//            if (parentBlock.nestedValueInstructionMap.size() > 0) {
+//                for (int identity : parentBlock.nestedValueInstructionMap.keySet()) {
+//                    joinBlock.assignedVariables.add(identity);
+//                }
+//            }
+//        }
 
         for (Integer identity : joinBlock.assignedVariables) {
             BasicBlock ifParent = joinBlock.parentBlocks.get(0);
-            Instruction ifValueGenerator = ifParent.nestedValueInstructionMap.get(identity);
-            if (ifValueGenerator == null) {
-                ifValueGenerator = ifParent.valueInstructionMap.get(identity);
-            }
+            Instruction ifValueGenerator = ifParent.valueInstructionMap.get(identity);
+            //Instruction ifValueGenerator = ifParent.nestedValueInstructionMap.get(identity);
+//            if (ifValueGenerator == null) {
+//                ifValueGenerator = ifParent.valueInstructionMap.get(identity);
+//            }
             if (ifValueGenerator == null) {
                 warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);
                 ifValueGenerator = assignZeroInstruction;
@@ -849,10 +863,11 @@ public class Parser {
             Operand firstOp = new Operand(false, 0, ifValueGenerator, identity);
 
             BasicBlock elseParent = joinBlock.parentBlocks.get(1);
-            Instruction elseValueGenerator = elseParent.nestedValueInstructionMap.get(identity);
-            if (elseValueGenerator == null) {
-                elseValueGenerator = elseParent.valueInstructionMap.get(identity);
-            }
+            Instruction elseValueGenerator = elseParent.valueInstructionMap.get(identity);
+//            Instruction elseValueGenerator = elseParent.nestedValueInstructionMap.get(identity);
+//            if (elseValueGenerator == null) {
+//                elseValueGenerator = elseParent.valueInstructionMap.get(identity);
+//            }
             if (elseValueGenerator == null) {
                 warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);
                 elseValueGenerator = assignZeroInstruction;
@@ -861,10 +876,10 @@ public class Parser {
             Instruction phiInstruction = new Instruction(Operators.phi, firstOp, secondOp);
             joinBlock.instructions.add(phiInstruction);
             joinBlock.valueInstructionMap.put(identity, phiInstruction);
-            updatedMap.put(identity, phiInstruction);
+            //updatedMap.put(identity, phiInstruction);
         }
-        BasicBlock outerParent = joinBlock.parentBlocks.get(0).parentBlocks.get(0);
-        outerParent.nestedValueInstructionMap = updatedMap;
+        //BasicBlock outerParent = joinBlock.parentBlocks.get(0).parentBlocks.get(0);
+        //outerParent.nestedValueInstructionMap = updatedMap;
     }
 
     private Instruction createPhiInstructionSingleVar(BasicBlock whileBlock, int identity, Operand whileOp) {
@@ -883,6 +898,12 @@ public class Parser {
     }
 
     private void updateBlockInstructions(BasicBlock block, int identity, Instruction newValueGenerator) {
+//        for(int id: block.assignedVariables){
+//            Instruction valueGenerator = block.valueInstructionMap.get(id);
+//            if(!block.instructions.contains(valueGenerator)){
+//                block.instructions.add(valueGenerator);
+//            }
+//        }
         for (int i = block.phiIndex; i < block.instructions.size(); i++) {
             Instruction oldInstruction = block.instructions.get(i);
             Instruction updatedInstruction = updateInstruction(block, oldInstruction, identity, newValueGenerator);
@@ -902,16 +923,21 @@ public class Parser {
         }
         Collection<Integer> usageVariables = block.instructionValueMap.get(oldInstruction);
         Operand firstOp, secondOp;
+        boolean operatorPhi = false;
+        if(oldInstruction.operator==Operators.phi){
+            operatorPhi = true;
+        }
         if (oldInstruction.firstOp!=null && !oldInstruction.firstOp.constant) {
-            firstOp = updateOperand(block, oldInstruction.firstOp, identity, newValueGenerator);
+            firstOp = updateOperand(block, oldInstruction.firstOp, identity, newValueGenerator, operatorPhi);
         } else {
             firstOp = oldInstruction.firstOp;
         }
         if (oldInstruction.secondOp != null && !oldInstruction.secondOp.constant) {
-            secondOp = updateOperand(block, oldInstruction.secondOp, identity, newValueGenerator);
+            secondOp = updateOperand(block, oldInstruction.secondOp, identity, newValueGenerator, operatorPhi);
         } else {
             secondOp = oldInstruction.secondOp;
         }
+
         oldInstruction.firstOp = firstOp;
         oldInstruction.secondOp = secondOp;
         Instruction updatedInstruction = oldInstruction;
@@ -934,10 +960,15 @@ public class Parser {
         return updatedInstruction;
     }
 
-    private Operand updateOperand(BasicBlock block, Operand operand, int identity, Instruction newValueGenerator) {
+    private Operand updateOperand(BasicBlock block, Operand operand, int identity, Instruction newValueGenerator, boolean operatorPhi) {
         Instruction valueGenerator;
         if (operand.id == identity) {
-            valueGenerator = newValueGenerator;
+            if(!operatorPhi){
+                valueGenerator = newValueGenerator;
+            }
+            else{
+                valueGenerator = updateInstruction(block, operand.valGenerator, identity, newValueGenerator);
+            }
             operand = new Operand(false, 0, valueGenerator, identity);
         } else if (operand.id < 0) {
             valueGenerator = updateInstruction(block, operand.valGenerator, identity, newValueGenerator);
