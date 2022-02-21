@@ -8,3 +8,5 @@ if_joinboth.smpl
 simplified_computations.smpl
 empty_if.smpl
 if-phi-uninit.smpl
+empty_while.smpl
+different_bb_common_subexpr.smpl

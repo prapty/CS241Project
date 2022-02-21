@@ -338,7 +338,7 @@ public class Parser {
         Instruction branch = parentBlock.getLastInstruction();
         branch.secondOp = op;
         parentBlock.setLastInstruction(branch);
-
+        //parentBlock.nestedValueInstructionMap = parentBlock.parentBlocks.get(0).nestedValueInstructionMap;
         if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.fiDefaultId.ordinal()) {
             token = lexer.nextToken();
 //            BasicBlock joinBlock = new BasicBlock();
@@ -347,6 +347,9 @@ public class Parser {
             //irTree.current = irTree.current.parentBlocks.get(0);
             for (int i = 0; i < irTree.current.childBlocks.size(); i++) {
                 BasicBlock block = irTree.current.childBlocks.get(i);
+//                if(i==0){
+//                    block.nestedValueInstructionMap = parentBlock.nestedValueInstructionMap;
+//                }
 //                if (block.childBlocks.size() < 1) {
 //                    joinBlock.parentBlocks.add(block);
 //                    block.childBlocks.add(joinBlock);
@@ -728,6 +731,7 @@ public class Parser {
                 }
                 if (irTree.current.whileBlock) {
                     valueGenerator = new Instruction(valueGenerator);
+                    valueGenerator.duplicate = true;
                     irTree.current.instructions.add(valueGenerator);
                 }
                 result = new Operand(false, 0, valueGenerator, token.id);

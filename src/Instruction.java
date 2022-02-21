@@ -46,6 +46,9 @@ public class Instruction {
                 ts += "#" + secondOp.constVal;
             }
         }
+        if(duplicate){
+            ts +=", duplicate";
+        }
         return ts;
     }
 }
