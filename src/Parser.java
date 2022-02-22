@@ -6,12 +6,14 @@ public class Parser {
     Token token;
     Instruction assignZeroInstruction;
     Operand zeroOperand;
+    Set<Integer> visitedBlocks;
 
     public Parser(String fileName) throws IOException, SyntaxException {
         this.lexer = new Lexer(fileName);
         token = lexer.nextToken();
         zeroOperand = new Operand(true, 0, null, -1);
         assignZeroInstruction = new Instruction(Operators.constant, zeroOperand, zeroOperand);
+        visitedBlocks = new HashSet<>();
     }
 
     IntermediateTree getIntermediateRepresentation() throws SyntaxException, IOException {
@@ -141,20 +143,19 @@ public class Parser {
                 }
                 Instruction valueGenerator = createPhiInstructionSingleVar(irTree.current, left.id, op);
                 op = new Operand(op.constant, op.constVal, valueGenerator, op.id);
-                updateBlockInstructions(parent, left.id, valueGenerator);
+//                updateBlockInstructions(parent, left.id, valueGenerator);
+//                if(irTree.current.parentBlocks.size()>0){
+//                    if(irTree.current.parentBlocks.get(0).parentBlocks.size()>0){
+//                        BasicBlock outerParent = irTree.current.parentBlocks.get(0).parentBlocks.get(0);
+//                        nestedAssignment(left.id, outerParent, op.valGenerator);
+//                    }
+//                }
                 //updateBlockInstructions(irTree.current, left.id, valueGenerator);
             }
         }
         irTree.current.instructionValueMap.put(op.valGenerator, left.id);
         irTree.current.valueInstructionMap.put(left.id, op.valGenerator);
         irTree.current.assignedVariables.add(left.id);
-//        if(irTree.current.parentBlocks.size()>0){
-//            if(irTree.current.parentBlocks.get(0).parentBlocks.size()>0){
-//                BasicBlock outerParent = irTree.current.parentBlocks.get(0).parentBlocks.get(0);
-//                outerParent.nestedValueInstructionMap.put(left.id, op.valGenerator);
-//            }
-//        }
-        //nestedAssignment(left.id, irTree.current.parentBlocks.get(0), op.valGenerator);
     }
 
     private void nestedAssignment(int identity, BasicBlock block, Instruction valGenerator) throws IOException, SyntaxException {
@@ -454,6 +455,9 @@ public class Parser {
         }
 
         BasicBlock newBlock = new BasicBlock();
+        if(condBlock.parentBlocks.get(0).whileBlock){
+            newBlock.whileBlock = true;
+        }
         newBlock.assignedVariables = irTree.current.assignedVariables;
         newBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
         newBlock.dominatorTree = irTree.current.dominatorTree.clone();
@@ -894,6 +898,20 @@ public class Parser {
         condBlock.instructions.add(condBlock.phiIndex, phiInstruction);
         condBlock.phiIndex++;
         condBlock.valueInstructionMap.put(identity, phiInstruction);
+        whileOp = new Operand(whileOp.constant, whileOp.constVal, phiInstruction, whileOp.id);
+        visitedBlocks.clear();
+        updateBlockInstructions(condBlock, identity, phiInstruction);
+        whileBlock.instructionValueMap.put(whileOp.valGenerator, identity);
+        whileBlock.valueInstructionMap.put(identity, whileOp.valGenerator);
+        whileBlock.assignedVariables.add(identity);
+
+        if(condBlock.parentBlocks.size()>0){
+            BasicBlock outerParent = condBlock.parentBlocks.get(0);
+            if(outerParent.whileBlock){
+                createPhiInstructionSingleVar(condBlock, identity, whileOp);
+            }
+        }
+
         return phiInstruction;
     }
 
@@ -904,6 +922,7 @@ public class Parser {
 //                block.instructions.add(valueGenerator);
 //            }
 //        }
+        visitedBlocks.add(block.IDNum);
         for (int i = block.phiIndex; i < block.instructions.size(); i++) {
             Instruction oldInstruction = block.instructions.get(i);
             Instruction updatedInstruction = updateInstruction(block, oldInstruction, identity, newValueGenerator);
@@ -913,7 +932,9 @@ public class Parser {
 //            }
         }
         for(int i=0; i<block.childBlocks.size(); i++){
-            updateBlockInstructions(block.childBlocks.get(i), identity, newValueGenerator);
+            if(!visitedBlocks.contains(block.childBlocks.get(i).IDNum)){
+                updateBlockInstructions(block.childBlocks.get(i), identity, newValueGenerator);
+            }
         }
     }
 
