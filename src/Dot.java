@@ -18,7 +18,7 @@ public class Dot {
         ArrayList<String> lines = new ArrayList<String>();
         ArrayList<String> branchLines = new ArrayList<>();
         lines.add("digraph G {");
-        updateInstructionID(irTree);
+        //updateInstructionID(irTree);
         LinkedList<BasicBlock> blocks = new LinkedList<>();
         blocks.add(irTree.constants);
         blocks.get(0).visbranch = true;
@@ -74,10 +74,10 @@ public class Dot {
     }
 
     private void branchBRA(Instruction i, BasicBlock basicBlock, ArrayList<String> lines, ArrayList<String> branchLines) {
-        Instruction branchTo = i.firstOp.valGenerator;
+        Integer branchTo = i.firstOp.valGenerator;
         BasicBlock branchBlock = null;
         for (BasicBlock cb : basicBlock.childBlocks) {
-            if (cb.instructions.contains(branchTo)) {
+            if (cb.instructionIDs.contains(branchTo)) {
                 branchBlock = cb;
                 break;
             }
@@ -88,10 +88,10 @@ public class Dot {
     }
 
     private void branchSO(Instruction i, BasicBlock basicBlock, ArrayList<String> lines, ArrayList<String> branchLines) {
-        Instruction branchTo = i.secondOp.valGenerator;
+        Integer branchTo = i.secondOp.valGenerator;
         BasicBlock branchBlock = null;
         for (BasicBlock cb : basicBlock.childBlocks) {
-            if (cb.instructions.contains(branchTo)) {
+            if (cb.instructionIDs.contains(branchTo)) {
                 branchBlock = cb;
                 break;
             } else {

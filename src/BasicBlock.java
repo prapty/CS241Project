@@ -11,12 +11,13 @@ public class BasicBlock {
     List<BasicBlock> parentBlocks;
     List<BasicBlock> childBlocks;
     List<Integer> declaredVariables;
+    List<Integer> instructionIDs;
     //To keep track of assigned variables for phi functions
     Set<Integer> assignedVariables;
     //during assignment, look into map of each parent block for latest value.
     // Join block has multiple parents. Use phi for them. All other blocks have single parents
     Map<Integer, Instruction> valueInstructionMap;
-    Multimap<Instruction, Integer> instructionValueMap;
+    //Multimap<Instruction, Integer> instructionValueMap;
     Map<Integer, Instruction> nestedValueInstructionMap;
 
     //Array to maintain linked list of basic operation instructions for common subexpression elimination
@@ -25,6 +26,7 @@ public class BasicBlock {
     //indicates whether current block is a while block
     boolean whileBlock;
     boolean makeDuplicate;
+    boolean nestedBlock;
     //indicates the index where phi instruction should be added
     int phiIndex;
 
@@ -35,6 +37,7 @@ public class BasicBlock {
 
     public BasicBlock() {
         instructions = new ArrayList<>();
+        instructionIDs = new ArrayList<>();
         valueInstructionMap = new HashMap<>();
         nestedValueInstructionMap = new HashMap<>();
         parentBlocks = new ArrayList<>();
@@ -42,7 +45,7 @@ public class BasicBlock {
         declaredVariables = new ArrayList<>();
         assignedVariables = new HashSet<>();
         dominatorTree = new InstructionLinkedList[9];
-        instructionValueMap = ArrayListMultimap.create();
+        //instructionValueMap = ArrayListMultimap.create();
         phiIndex = 0;
         whileBlock = false;
         dominatorBlock = null;

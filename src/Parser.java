@@ -23,6 +23,7 @@ public class Parser {
         node.value = assignZeroInstruction;
         intermediateTree.constants.dominatorTree[Operators.constant.ordinal()] = node;
         intermediateTree.constants.instructions.add(assignZeroInstruction);
+        intermediateTree.constants.instructionIDs.add(assignZeroInstruction.IDNum);
         Computation(intermediateTree);
         return intermediateTree;
     }
@@ -132,17 +133,33 @@ public class Parser {
 //            Operand op = funcCall(irTree);
 //        }
         Operand op = Expression(irTree);
+        irTree.current.valueInstructionMap.put(left.id, op.returnVal);
+        irTree.current.assignedVariables.add(left.id);
+        if(irTree.current.makeDuplicate){
+            BasicBlock parent = irTree.current.parentBlocks.get(0);
+            if (parent.declaredVariables.contains(left.id)) {
+                if (!irTree.current.instructionIDs.contains(op.valGenerator)) {
+                    Instruction newInstruction = new Instruction(op.returnVal);
+                    op.valGenerator = newInstruction.IDNum;
+                    irTree.current.instructions.add(newInstruction);
+                    irTree.current.instructionIDs.add(newInstruction.IDNum);
+                    irTree.current.valueInstructionMap.put(left.id, newInstruction);
+                }
+            }
+        }
         //create phi instruction in parent and use that value for assignment
         if (irTree.current.whileBlock) {
             BasicBlock parent = irTree.current.parentBlocks.get(0);
             if (parent.declaredVariables.contains(left.id)) {
-                if (!irTree.current.instructions.contains(op.valGenerator)) {
-                    Instruction newInstruction = new Instruction(op.valGenerator);
-                    op.valGenerator = newInstruction;
-                    irTree.current.instructions.add(op.valGenerator);
+                if (!irTree.current.instructionIDs.contains(op.valGenerator)) {
+                    Instruction newInstruction = new Instruction(op.returnVal);
+                    op.valGenerator = newInstruction.IDNum;
+                    irTree.current.instructions.add(newInstruction);
+                    irTree.current.instructionIDs.add(newInstruction.IDNum);
+                    irTree.current.valueInstructionMap.put(left.id, newInstruction);
                 }
                 Instruction valueGenerator = createPhiInstructionSingleVar(irTree.current, left.id, op);
-                op = new Operand(op.constant, op.constVal, valueGenerator, op.id);
+                op = new Operand(op.constant, op.constVal, valueGenerator.IDNum, op.id);
 //                updateBlockInstructions(parent, left.id, valueGenerator);
 //                if(irTree.current.parentBlocks.size()>0){
 //                    if(irTree.current.parentBlocks.get(0).parentBlocks.size()>0){
@@ -153,12 +170,12 @@ public class Parser {
                 //updateBlockInstructions(irTree.current, left.id, valueGenerator);
             }
         }
-        irTree.current.instructionValueMap.put(op.valGenerator, left.id);
-        irTree.current.valueInstructionMap.put(left.id, op.valGenerator);
-        irTree.current.assignedVariables.add(left.id);
+        //irTree.current.instructionValueMap.put(op.valGenerator, left.id);
+//        irTree.current.valueInstructionMap.put(left.id, op.returnVal);
+//        irTree.current.assignedVariables.add(left.id);
     }
 
-    private void nestedAssignment(int identity, BasicBlock block, Instruction valGenerator) throws IOException, SyntaxException {
+    /*private void nestedAssignment(int identity, BasicBlock block, Instruction valGenerator) throws IOException, SyntaxException {
         if (block.whileBlock) {
             BasicBlock parent = block.parentBlocks.get(0);
             Operand op = new Operand(false, 0, valGenerator, identity);
@@ -171,7 +188,7 @@ public class Parser {
                 block.assignedVariables.add(identity);
             }
         }
-    }
+    }*/
 
     private Operand funcCall(IntermediateTree irTree) throws SyntaxException, IOException { //do later
 
@@ -180,6 +197,7 @@ public class Parser {
                 Operators ops = Operators.read;
                 Instruction readInstr = new Instruction(ops);
                 irTree.current.instructions.add(readInstr);
+                irTree.current.instructionIDs.add(readInstr.IDNum);
 //                InstructionLinkedList node = new InstructionLinkedList();
 //                node.value = readInstr;
 //                node.previous = irTree.current.dominatorTree[ops.ordinal()];
@@ -189,7 +207,8 @@ public class Parser {
                     token = lexer.nextToken();
                 }
 
-                Operand ret = new Operand(true, -1, readInstr, -1);
+                Operand ret = new Operand(true, -1, readInstr.IDNum, -1);
+                ret.returnVal = readInstr;
                 return ret;
                 //return operand
             } else if (token.id == ReservedWords.OutputNumDefaultId.ordinal()) {
@@ -202,11 +221,12 @@ public class Parser {
                     Instruction constantInstruction = new Instruction(Operators.constant, writtenNum, writtenNum);
                     Instruction duplicate = getDuplicateInstruction(irTree.constants.dominatorTree[Operators.constant.ordinal()], constantInstruction);
                     if (duplicate != null) {
-                        writtenNum.valGenerator = duplicate;
+                        writtenNum.valGenerator = duplicate.IDNum;
+                        Instruction.instrNum--;
                     } else {
                         irTree.constants.instructions.add(constantInstruction);
-
-                        writtenNum = new Operand(true, token.val, constantInstruction, -1);
+                        irTree.constants.instructionIDs.add(constantInstruction.IDNum);
+                        writtenNum = new Operand(true, token.val, constantInstruction.IDNum, -1);
                         InstructionLinkedList node = new InstructionLinkedList();
                         node.value = constantInstruction;
                         node.previous = irTree.constants.dominatorTree[Operators.constant.ordinal()];
@@ -214,6 +234,7 @@ public class Parser {
                     }
                     Instruction write = new Instruction(ops, writtenNum);
                     irTree.current.instructions.add(write);
+                    irTree.current.instructionIDs.add(write.IDNum);
 //                    InstructionLinkedList node = new InstructionLinkedList();
 //                    node.value = write;
 //                    node.previous = irTree.current.dominatorTree[ops.ordinal()];
@@ -229,10 +250,10 @@ public class Parser {
                         warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);
                         valueGenerator = assignZeroInstruction;
                     }
-                    varWrite = new Operand(false, 0, valueGenerator, token.id);
+                    varWrite = new Operand(false, 0, valueGenerator.IDNum, token.id);
                     Instruction write = new Instruction(ops, varWrite);
                     irTree.current.instructions.add(write);
-
+                    irTree.current.instructionIDs.add(write.IDNum);
 //                    InstructionLinkedList node = new InstructionLinkedList();
 //                    node.value = write;
 //                    node.previous = irTree.current.dominatorTree[ops.ordinal()];
@@ -245,6 +266,7 @@ public class Parser {
                 Operators ops = Operators.writeNL;
                 Instruction writeNLInstr = new Instruction(ops);
                 irTree.current.instructions.add(writeNLInstr);
+                irTree.current.instructionIDs.add(writeNLInstr.IDNum);
 //                InstructionLinkedList node = new InstructionLinkedList();
 //                node.value = writeNLInstr;
 //                node.previous = irTree.current.dominatorTree[ops.ordinal()];
@@ -294,6 +316,7 @@ public class Parser {
             if (thenBlock.instructions.isEmpty()) {
                 Instruction emptyInstr = new Instruction(Operators.empty);
                 thenBlock.instructions.add(emptyInstr);
+                thenBlock.instructionIDs.add(emptyInstr.IDNum);
             }
         } else {
             //error
@@ -339,9 +362,10 @@ public class Parser {
         if (elseBlock.instructions.isEmpty()) {
             Instruction emptyInstr = new Instruction(Operators.empty);
             elseBlock.instructions.add(emptyInstr);
+            elseBlock.instructionIDs.add(emptyInstr.IDNum);
         }
         Instruction firstInstr = elseBlock.instructions.get(0);
-        Operand op = new Operand(false, 0, firstInstr, -1);
+        Operand op = new Operand(false, 0, firstInstr.IDNum, -1);
         Instruction branch = parentBlock.getLastInstruction();
         branch.secondOp = op;
         parentBlock.setLastInstruction(branch);
@@ -372,7 +396,7 @@ public class Parser {
             irTree.current = joinBlock;
             if(parentBlock.whileBlock){
                 for(int identity: joinBlock.assignedVariables){
-                    Operand phiOp = new Operand(false, 0, joinBlock.valueInstructionMap.get(identity), identity);
+                    Operand phiOp = new Operand(false, 0, joinBlock.valueInstructionMap.get(identity).IDNum, identity);
                     Instruction updatedInstruction = createPhiInstructionSingleVar(parentBlock, identity, phiOp);
                     updateBlockInstructions(parentBlock, identity, updatedInstruction);
                     //updateBlockInstructions(thenBlock, identity, updatedInstruction);
@@ -386,13 +410,15 @@ public class Parser {
             if (joinBlock.instructions.isEmpty()) {
                 Instruction emptyInstr = new Instruction(Operators.empty);
                 joinBlock.instructions.add(emptyInstr);
+                joinBlock.instructionIDs.add(emptyInstr.IDNum);
             }
 
             // create operand to branch bra instruction
             Instruction first = joinBlock.instructions.get(0);
-            Operand opp = new Operand(false, 0, first, -1);
+            Operand opp = new Operand(false, 0, first.IDNum, -1);
             Instruction bra = new Instruction(Operators.bra, opp);
             joinBlock.parentBlocks.get(0).instructions.add(bra);
+            joinBlock.parentBlocks.get(0).instructionIDs.add(bra.IDNum);
 
 //            branch.secondOp = op;
 //            parentBlock.setLastInstruction(branch);
@@ -410,7 +436,7 @@ public class Parser {
             condBlock = irTree.current;
         } else {
         condBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
-        condBlock.instructionValueMap.putAll(irTree.current.instructionValueMap);
+        //condBlock.instructionValueMap.putAll(irTree.current.instructionValueMap);
         condBlock.dominatorTree = irTree.current.dominatorTree.clone();
         condBlock.declaredVariables.addAll(irTree.current.declaredVariables);
         condBlock.parentBlocks.add(irTree.current);
@@ -444,10 +470,10 @@ public class Parser {
 
         // create second operand to branch instruction
         Instruction firstInstr = condBlock.instructions.get(0);
-        Operand op = new Operand(false, 0, firstInstr, -1);
+        Operand op = new Operand(false, 0, firstInstr.IDNum, -1);
         Instruction branch = new Instruction(Operators.bra, op);
         irTree.current.instructions.add(branch);
-
+        irTree.current.instructionIDs.add(branch.IDNum);
 
         if (token.kind != TokenKind.reservedWord || token.id != ReservedWords.odDefaultId.ordinal()) {
             //error
@@ -457,11 +483,12 @@ public class Parser {
         BasicBlock newBlock = new BasicBlock();
         if(condBlock.parentBlocks.get(0).whileBlock){
             newBlock.whileBlock = true;
+            newBlock.nestedBlock = true;
         }
-        newBlock.assignedVariables = irTree.current.assignedVariables;
-        newBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
-        newBlock.dominatorTree = irTree.current.dominatorTree.clone();
-        newBlock.declaredVariables.addAll(irTree.current.declaredVariables);
+        newBlock.assignedVariables = condBlock.assignedVariables;
+        newBlock.valueInstructionMap.putAll(condBlock.valueInstructionMap);
+        newBlock.dominatorTree = condBlock.dominatorTree.clone();
+        newBlock.declaredVariables.addAll(condBlock.declaredVariables);
         newBlock.parentBlocks.add(condBlock);
         condBlock.childBlocks.add(newBlock);
         irTree.current = newBlock;
@@ -470,10 +497,11 @@ public class Parser {
         if (newBlock.instructions.isEmpty()) {
             Instruction emptyInstr = new Instruction(Operators.empty);
             newBlock.instructions.add(emptyInstr);
+            newBlock.instructionIDs.add(emptyInstr.IDNum);
         }
 
         firstInstr = newBlock.instructions.get(0);
-        Operand ops = new Operand(false, 0, firstInstr, -1);
+        Operand ops = new Operand(false, 0, firstInstr.IDNum, -1);
         Instruction branchCond = condBlock.getLastInstruction();
         branchCond.secondOp = ops;
         condBlock.setLastInstruction(branchCond);
@@ -503,44 +531,51 @@ public class Parser {
             token = lexer.nextToken();
             right = Expression(irTree);
             Instruction cmp = new Instruction(ops, left, right);
-           // irTree.current.instructions.add(cmp);
-            if(right.constant){
-                Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[ops.ordinal()], cmp);
+            irTree.current.instructions.add(cmp);
+            irTree.current.instructionIDs.add(cmp.IDNum);
+//            if(right.constant){
+//                Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[ops.ordinal()], cmp);
+//
+//                if (duplicate != null) {
+//                    cmp = duplicate;
+//                    //irTree.current.instructions.remove(irTree.current.instructions.size() - 1);
+//                } else {
+//                    irTree.current.instructions.add(cmp);
+//                    InstructionLinkedList node = new InstructionLinkedList();
+//                    node.value = cmp;
+//                    node.previous = irTree.current.dominatorTree[ops.ordinal()];
+//                    irTree.current.dominatorTree[ops.ordinal()] = node;
+//                }
+//            }
+//            else{
+//                irTree.current.instructions.add(cmp);
+//            }
 
-                if (duplicate != null) {
-                    cmp = duplicate;
-                    //irTree.current.instructions.remove(irTree.current.instructions.size() - 1);
-                } else {
-                    irTree.current.instructions.add(cmp);
-                    InstructionLinkedList node = new InstructionLinkedList();
-                    node.value = cmp;
-                    node.previous = irTree.current.dominatorTree[ops.ordinal()];
-                    irTree.current.dominatorTree[ops.ordinal()] = node;
-                }
-            }
-            else{
-                irTree.current.instructions.add(cmp);
-            }
-
-            Operand opcmp = new Operand(false, 0, cmp, -1);
+            Operand opcmp = new Operand(false, 0, cmp.IDNum, -1);
             if (relOp.id == ReservedWords.equalToDefaultId.ordinal()) {
                 Instruction branch = new Instruction(Operators.bne, opcmp, null);
                 irTree.current.instructions.add(branch);
+                irTree.current.instructionIDs.add(branch.IDNum);
             } else if (relOp.id == ReservedWords.notEqualToDefaultId.ordinal()) {
                 Instruction branch = new Instruction(Operators.beq, opcmp, null);
                 irTree.current.instructions.add(branch);
+                irTree.current.instructionIDs.add(branch.IDNum);
             } else if (relOp.id == ReservedWords.lessThanDefaultId.ordinal()) {
                 Instruction branch = new Instruction(Operators.bge, opcmp, null);
                 irTree.current.instructions.add(branch);
+                irTree.current.instructionIDs.add(branch.IDNum);
             } else if (relOp.id == ReservedWords.lessThanOrEqualToDefaultId.ordinal()) {
                 Instruction branch = new Instruction(Operators.bgt, opcmp, null);
                 irTree.current.instructions.add(branch);
+                irTree.current.instructionIDs.add(branch.IDNum);
             } else if (relOp.id == ReservedWords.greaterThanDefaultId.ordinal()) {
                 Instruction branch = new Instruction(Operators.ble, opcmp, null);
                 irTree.current.instructions.add(branch);
+                irTree.current.instructionIDs.add(branch.IDNum);
             } else if (relOp.id == ReservedWords.greaterThanOrEqualToDefaultId.ordinal()) {
                 Instruction branch = new Instruction(Operators.blt, opcmp, null);
                 irTree.current.instructions.add(branch);
+                irTree.current.instructionIDs.add(branch.IDNum);
             }
         }
     }
@@ -614,15 +649,17 @@ public class Parser {
         Instruction instruction = new Instruction(operator, left, right);
         Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[operator.ordinal()], instruction);
         if (duplicate != null) {
-            if (!irTree.current.whileBlock && !irTree.current.makeDuplicate) {
-                instruction = duplicate;
-            }
-            else{
-                instruction.duplicate = true;
-                irTree.current.instructions.add(instruction);
-            }
+            instruction = duplicate;
+//            if (!irTree.current.whileBlock && !irTree.current.makeDuplicate) {
+//                instruction = duplicate;
+//            }
+//            else{
+//                instruction.duplicate = true;
+//                irTree.current.instructions.add(instruction);
+//            }
         } else {
             irTree.current.instructions.add(instruction);
+            irTree.current.instructionIDs.add(instruction.IDNum);
             InstructionLinkedList node = new InstructionLinkedList();
             node.value = instruction;
             node.previous = irTree.current.dominatorTree[operator.ordinal()];
@@ -638,7 +675,8 @@ public class Parser {
         if ((left.constant && !right.constant) || (!left.constant && right.constant)) {
             id = -2;
         }
-        Operand op = new Operand(false, 0, instruction, id);
+        Operand op = new Operand(false, 0, instruction.IDNum, id);
+        op.returnVal = instruction;
         return op;
         //op.valGenerator=constantInstruction;
     }
@@ -655,11 +693,14 @@ public class Parser {
                 Instruction constantInstruction = new Instruction(Operators.constant, result, result);
                 Instruction duplicate = getDuplicateInstruction(irTree.constants.dominatorTree[Operators.constant.ordinal()], constantInstruction);
                 if (duplicate != null) {
-                    result.valGenerator = duplicate;
+                    result.valGenerator = duplicate.IDNum;
+                    result.returnVal = duplicate;
+                    Instruction.instrNum--;
                 } else {
                     irTree.constants.instructions.add(constantInstruction);
-
-                    result = new Operand(true, token.val, constantInstruction, -1);
+                    irTree.constants.instructionIDs.add(constantInstruction.IDNum);
+                    result = new Operand(true, token.val, constantInstruction.IDNum, -1);
+                    result.returnVal = constantInstruction;
                     //op.valGenerator=constantInstruction;
                     InstructionLinkedList node = new InstructionLinkedList();
                     node.value = constantInstruction;
@@ -668,16 +709,20 @@ public class Parser {
                 }
 
                 Instruction negInstr = new Instruction(Operators.neg, result);
-                result = new Operand(true, -token.val, negInstr, -1);
+                result = new Operand(true, -token.val, negInstr.IDNum, -1);
+                result.returnVal = negInstr;
                 duplicate = getDuplicateInstructionSingleOp(irTree.current.dominatorTree[Operators.neg.ordinal()], negInstr);
                 if (duplicate != null) {
-                    result.valGenerator = duplicate;
+                    result.valGenerator = duplicate.IDNum;
+                    result.returnVal = duplicate;
+                    Instruction.instrNum--;
                 } else {
                     InstructionLinkedList node = new InstructionLinkedList();
                     node.value = negInstr;
                     node.previous = irTree.current.dominatorTree[Operators.neg.ordinal()];
                     irTree.current.dominatorTree[Operators.neg.ordinal()] = node;
                     irTree.current.instructions.add(negInstr);
+                    irTree.current.instructionIDs.add(negInstr.IDNum);
                 }
             } else if (token.kind == TokenKind.identity) {
                 if (!irTree.current.declaredVariables.contains(token.id)) {
@@ -689,12 +734,15 @@ public class Parser {
                     valueGenerator = assignZeroInstruction;
                 }
 //                irTree.current.instructions.add(valueGenerator);
-                result = new Operand(false, 0, valueGenerator, token.id);
+                result = new Operand(false, 0, valueGenerator.IDNum, token.id);
+                result.returnVal = valueGenerator;
                 Instruction negInstr = new Instruction(Operators.neg, result);
-                result = new Operand(false, 0, negInstr, token.id);
+                result = new Operand(false, 0, negInstr.IDNum, token.id);
                 Instruction duplicate = getDuplicateInstructionSingleOp(irTree.current.dominatorTree[Operators.neg.ordinal()], negInstr);
                 if (duplicate != null) {
-                    result.valGenerator = duplicate;
+                    result.valGenerator = duplicate.IDNum;
+                    result.returnVal = duplicate;
+                    Instruction.instrNum--;
                 } else {
                     InstructionLinkedList node = new InstructionLinkedList();
                     node.value = negInstr;
@@ -702,21 +750,26 @@ public class Parser {
                     irTree.current.dominatorTree[Operators.neg.ordinal()] = node;
 
                     irTree.current.instructions.add(negInstr);
+                    irTree.current.instructionIDs.add(negInstr.IDNum);
                 }
             } else if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
                 token = lexer.nextToken();
                 result = Expression(irTree);
                 Instruction negInstr = new Instruction(Operators.neg, result);
-                result = new Operand(false, 0, negInstr, -1);
+                result = new Operand(false, 0, negInstr.IDNum, -1);
+                result.returnVal = negInstr;
                 Instruction duplicate = getDuplicateInstructionSingleOp(irTree.current.dominatorTree[Operators.neg.ordinal()], negInstr);
                 if (duplicate != null) {
-                    result.valGenerator = duplicate;
+                    result.valGenerator = duplicate.IDNum;
+                    result.returnVal = duplicate;
+                    Instruction.instrNum--;
                 } else {
                     InstructionLinkedList node = new InstructionLinkedList();
                     node.value = negInstr;
                     node.previous = irTree.current.dominatorTree[Operators.neg.ordinal()];
                     irTree.current.dominatorTree[Operators.neg.ordinal()] = node;
                     irTree.current.instructions.add(negInstr);
+                    irTree.current.instructionIDs.add(negInstr.IDNum);
 //                    Instruction++;
                 }
             }
@@ -746,12 +799,14 @@ public class Parser {
                     warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);
                     valueGenerator = assignZeroInstruction;
                 }
-                if (irTree.current.whileBlock || irTree.current.makeDuplicate) {
-                    valueGenerator = new Instruction(valueGenerator);
-                    valueGenerator.duplicate = true;
-                    irTree.current.instructions.add(valueGenerator);
-                }
-                result = new Operand(false, 0, valueGenerator, token.id);
+//                if (irTree.current.whileBlock || irTree.current.makeDuplicate) {
+//                    valueGenerator = new Instruction(valueGenerator);
+//                    valueGenerator.duplicate = true;
+//                    irTree.current.instructions.add(valueGenerator);
+//                    irTree.current.instructionIDs.add(valueGenerator.IDNum);
+//                }
+                result = new Operand(false, 0, valueGenerator.IDNum, token.id);
+                result.returnVal = valueGenerator;
             }
             if (token.kind == TokenKind.number) {
                 //num
@@ -759,11 +814,15 @@ public class Parser {
                 Instruction constantInstruction = new Instruction(Operators.constant, result, result);
                 Instruction duplicate = getDuplicateInstruction(irTree.constants.dominatorTree[Operators.constant.ordinal()], constantInstruction);
                 if (duplicate != null) {
-                    result.valGenerator = duplicate;
+                    result.valGenerator = duplicate.IDNum;
+                    result.returnVal = duplicate;
+                    Instruction.instrNum--;
                 } else {
                     irTree.constants.instructions.add(constantInstruction);
+                    irTree.constants.instructionIDs.add(constantInstruction.IDNum);
 
-                    result = new Operand(true, token.val, constantInstruction, -1);
+                    result = new Operand(true, token.val, constantInstruction.IDNum, -1);
+                    result.returnVal = constantInstruction;
                     //op.valGenerator=constantInstruction;
                     InstructionLinkedList node = new InstructionLinkedList();
                     node.value = constantInstruction;
@@ -843,7 +902,7 @@ public class Parser {
     }
 
     private void createPhiInstructions(BasicBlock joinBlock) {
-//        Map<Integer, Instruction> updatedMap = new HashMap<>();
+        //Map<Integer, Instruction> updatedMap = new HashMap<>();
 //        for (int i = 0; i < joinBlock.parentBlocks.size(); i++) {
 //            BasicBlock parentBlock = joinBlock.parentBlocks.get(i);
 //            if (parentBlock.nestedValueInstructionMap.size() > 0) {
@@ -856,7 +915,7 @@ public class Parser {
         for (Integer identity : joinBlock.assignedVariables) {
             BasicBlock ifParent = joinBlock.parentBlocks.get(0);
             Instruction ifValueGenerator = ifParent.valueInstructionMap.get(identity);
-            //Instruction ifValueGenerator = ifParent.nestedValueInstructionMap.get(identity);
+//            Instruction ifValueGenerator = ifParent.nestedValueInstructionMap.get(identity);
 //            if (ifValueGenerator == null) {
 //                ifValueGenerator = ifParent.valueInstructionMap.get(identity);
 //            }
@@ -864,7 +923,7 @@ public class Parser {
                 warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);
                 ifValueGenerator = assignZeroInstruction;
             }
-            Operand firstOp = new Operand(false, 0, ifValueGenerator, identity);
+            Operand firstOp = new Operand(false, 0, ifValueGenerator.IDNum, identity);
 
             BasicBlock elseParent = joinBlock.parentBlocks.get(1);
             Instruction elseValueGenerator = elseParent.valueInstructionMap.get(identity);
@@ -876,9 +935,10 @@ public class Parser {
                 warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);
                 elseValueGenerator = assignZeroInstruction;
             }
-            Operand secondOp = new Operand(false, 0, elseValueGenerator, identity);
+            Operand secondOp = new Operand(false, 0, elseValueGenerator.IDNum, identity);
             Instruction phiInstruction = new Instruction(Operators.phi, firstOp, secondOp);
             joinBlock.instructions.add(phiInstruction);
+            joinBlock.instructionIDs.add(phiInstruction.IDNum);
             joinBlock.valueInstructionMap.put(identity, phiInstruction);
             //updatedMap.put(identity, phiInstruction);
         }
@@ -888,21 +948,27 @@ public class Parser {
 
     private Instruction createPhiInstructionSingleVar(BasicBlock whileBlock, int identity, Operand whileOp) {
         BasicBlock condBlock = whileBlock.parentBlocks.get(0);
+        if(whileBlock.nestedBlock){
+            condBlock = whileBlock.parentBlocks.get(0).parentBlocks.get(0);
+        }
         Instruction valueGenerator = condBlock.valueInstructionMap.get(identity);
         if (valueGenerator == null) {
             warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);
             valueGenerator = assignZeroInstruction;
         }
-        Operand condOp = new Operand(false, 0, valueGenerator, identity);
+        Operand condOp = new Operand(false, 0, valueGenerator.IDNum, identity);
         Instruction phiInstruction = new Instruction(Operators.phi, condOp, whileOp);
         condBlock.instructions.add(condBlock.phiIndex, phiInstruction);
+        condBlock.instructionIDs.add(phiInstruction.IDNum);
         condBlock.phiIndex++;
         condBlock.valueInstructionMap.put(identity, phiInstruction);
-        whileOp = new Operand(whileOp.constant, whileOp.constVal, phiInstruction, whileOp.id);
+        condBlock.assignedVariables.add(identity);
+        whileOp = new Operand(whileOp.constant, whileOp.constVal, phiInstruction.IDNum, whileOp.id);
         visitedBlocks.clear();
         updateBlockInstructions(condBlock, identity, phiInstruction);
-        whileBlock.instructionValueMap.put(whileOp.valGenerator, identity);
-        whileBlock.valueInstructionMap.put(identity, whileOp.valGenerator);
+
+        //whileBlock.instructionValueMap.put(whileOp.valGenerator, identity);
+        //whileBlock.valueInstructionMap.put(identity, whileOp.valGenerator);
         whileBlock.assignedVariables.add(identity);
 
         if(condBlock.parentBlocks.size()>0){
@@ -916,15 +982,12 @@ public class Parser {
     }
 
     private void updateBlockInstructions(BasicBlock block, int identity, Instruction newValueGenerator) {
-//        for(int id: block.assignedVariables){
-//            Instruction valueGenerator = block.valueInstructionMap.get(id);
-//            if(!block.instructions.contains(valueGenerator)){
-//                block.instructions.add(valueGenerator);
-//            }
-//        }
         visitedBlocks.add(block.IDNum);
-        for (int i = block.phiIndex; i < block.instructions.size(); i++) {
+        for (int i = 0; i < block.instructions.size(); i++) {
             Instruction oldInstruction = block.instructions.get(i);
+            if(oldInstruction.IDNum==newValueGenerator.IDNum){
+                continue;
+            }
             Instruction updatedInstruction = updateInstruction(block, oldInstruction, identity, newValueGenerator);
             block.instructions.set(i, updatedInstruction);
 //            if(oldInstruction.operator.ordinal()<=6){
@@ -942,19 +1005,16 @@ public class Parser {
         if (oldInstruction.operator == Operators.constant) {
             return oldInstruction;
         }
-        Collection<Integer> usageVariables = block.instructionValueMap.get(oldInstruction);
+        //Collection<Integer> usageVariables = block.instructionValueMap.get(oldInstruction);
         Operand firstOp, secondOp;
-        boolean operatorPhi = false;
-        if(oldInstruction.operator==Operators.phi){
-            operatorPhi = true;
-        }
+
         if (oldInstruction.firstOp!=null && !oldInstruction.firstOp.constant) {
-            firstOp = updateOperand(block, oldInstruction.firstOp, identity, newValueGenerator, operatorPhi);
+            firstOp = updateOperand(block, oldInstruction.firstOp, identity, newValueGenerator);
         } else {
             firstOp = oldInstruction.firstOp;
         }
         if (oldInstruction.secondOp != null && !oldInstruction.secondOp.constant) {
-            secondOp = updateOperand(block, oldInstruction.secondOp, identity, newValueGenerator, operatorPhi);
+            secondOp = updateOperand(block, oldInstruction.secondOp, identity, newValueGenerator);
         } else {
             secondOp = oldInstruction.secondOp;
         }
@@ -975,27 +1035,32 @@ public class Parser {
 //            }
 //        }
 
-        for (int id : usageVariables) {
-            block.valueInstructionMap.put(id, updatedInstruction);
-        }
+//        for (int id : usageVariables) {
+//            block.valueInstructionMap.put(id, updatedInstruction);
+//        }
         return updatedInstruction;
     }
 
-    private Operand updateOperand(BasicBlock block, Operand operand, int identity, Instruction newValueGenerator, boolean operatorPhi) {
-        Instruction valueGenerator;
-        if (operand.id == identity) {
-            if(!operatorPhi){
-                valueGenerator = newValueGenerator;
-            }
-            else{
-                valueGenerator = updateInstruction(block, operand.valGenerator, identity, newValueGenerator);
-            }
-            operand = new Operand(false, 0, valueGenerator, identity);
-        } else if (operand.id < 0) {
-            valueGenerator = updateInstruction(block, operand.valGenerator, identity, newValueGenerator);
-            operand = new Operand(false, 0, valueGenerator, operand.id);
+    private Operand updateOperand(BasicBlock block, Operand operand, int identity, Instruction newValueGenerator) {
+//        Instruction valueGenerator;
+//        if (operand.id == identity) {
+//            if(!operatorPhi){
+//                valueGenerator = newValueGenerator;
+//            }
+//            else{
+//                valueGenerator = updateInstruction(block, operand.valGenerator, identity, newValueGenerator);
+//            }
+//            operand = new Operand(false, 0, valueGenerator, identity);
+//        } else if (operand.id < 0) {
+//            valueGenerator = updateInstruction(block, operand.valGenerator, identity, newValueGenerator);
+//            operand = new Operand(false, 0, valueGenerator, operand.id);
+//        }
+        if(operand.valGenerator==newValueGenerator.firstOp.valGenerator){
+            operand.valGenerator = newValueGenerator.IDNum;
         }
-
+        else if(operand.valGenerator==newValueGenerator.secondOp.valGenerator){
+            operand.valGenerator = newValueGenerator.IDNum;
+        }
        return operand;
 //        Operand updatedOperand = new Operand(false, 0, valueGenerator, identity);
 //        return updatedOperand;

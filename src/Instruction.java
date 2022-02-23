@@ -10,38 +10,46 @@ public class Instruction {
         this.operator = operator;
         this.firstOp = firstOp;
         this.secondOp = secondOp;
+        IDNum = instrNum;
+        instrNum++;
     }
 
     public Instruction(Operators operator) {
         this.operator = operator;
         firstOp = null;
         secondOp = null;
+        IDNum = instrNum;
+        instrNum++;
     }
 
     public Instruction(Operators operator, Operand opr) {
         this.operator = operator;
         this.firstOp = opr;
         secondOp = null;
+        IDNum = instrNum;
+        instrNum++;
     }
 
     public Instruction(Instruction instruction) {
         this.operator = instruction.operator;
-        this.firstOp = instruction.firstOp;
-        this.secondOp = instruction.secondOp;
+        this.firstOp = new Operand(instruction.firstOp);
+        this.secondOp = new Operand(instruction.secondOp);
+        IDNum = instrNum;
+        instrNum++;
     }
 
     public String toString() {
         String ts = operator.toString();
         if (firstOp != null) {
             if (firstOp.valGenerator!= null) {
-                ts += "(" + firstOp.valGenerator.IDNum + ")";
+                ts += "(" + firstOp.valGenerator + ")";
             } else {
                 ts += "#" + firstOp.constVal;
             }
         }
         if (secondOp != null) {
             if (secondOp.valGenerator!= null) {
-                ts += "(" + secondOp.valGenerator.IDNum + ")";
+                ts += "(" + secondOp.valGenerator + ")";
             } else {
                 ts += "#" + secondOp.constVal;
             }
