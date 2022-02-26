@@ -24,7 +24,11 @@ public class BasicBlock {
     //index: 0-add, 1-sub, 2-mul, 3-div, 4-const, 5-neg
     InstructionLinkedList[] dominatorTree;
     //indicates whether current block is a while block
-    boolean whileBlock;
+    boolean whileBlock; //if it is part of a while loop
+    boolean isCond; // if it is a condblock
+    BasicBlock condBlock; // points to the direct upper cond block. if nested, the condblock points to outer condblock
+    int nested; // 1 if simple loop, increase by 1 for each nested while
+
     boolean makeDuplicate;
     boolean nestedBlock;
     //indicates the index where phi instruction should be added
@@ -48,6 +52,10 @@ public class BasicBlock {
         //instructionValueMap = ArrayListMultimap.create();
         phiIndex = 0;
         whileBlock = false;
+        condBlock = null;
+        isCond = false;
+        nested=0;
+
         dominatorBlock = null;
         IDNum = instrNum;
         instrNum++;

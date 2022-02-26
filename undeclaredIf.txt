@@ -1,0 +1,7 @@
+main
+var a;
+{
+    if a < 0 then
+    let a <- a+1;
+    fi;
+}.

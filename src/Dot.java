@@ -38,7 +38,6 @@ public class Dot {
                     blocks.add(b);
                     b.visbranch = true;
                 }
-                ;
             }
             blocks.poll();
         }

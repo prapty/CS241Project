@@ -1,11 +1,14 @@
 main
 var a, b; {
-let a <- 1;
+let a <- 1 + 1;
 let b <- a + 1;
-let b <- b + 1;
 while a < 10 do
-let a<- b + 1;
+let a<- 1 + 1;
     while b<a do
+    let b <- b+a;
+        while b >3 do
+        let a <- b+1;
+        od;
     let a <- a+3;
     od;
 let a <- a-1;
