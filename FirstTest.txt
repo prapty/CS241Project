@@ -3,9 +3,9 @@ var a, b; {
 let a <- 1;
 let b <- a + 1;
 while a < 10 do
-    while b<a do
-    let b <- b+a;
+    while b < a do
+        let b <- b + a;
     od;
-let a <- a +1;
+    let a <- a + 1;
 od;
 }.

@@ -1,6 +1,3 @@
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
-
 import java.util.*;
 
 public class BasicBlock {
@@ -17,8 +14,6 @@ public class BasicBlock {
     //during assignment, look into map of each parent block for latest value.
     // Join block has multiple parents. Use phi for them. All other blocks have single parents
     Map<Integer, Instruction> valueInstructionMap;
-    //Multimap<Instruction, Integer> instructionValueMap;
-    Map<Integer, Instruction> nestedValueInstructionMap;
 
     //Array to maintain linked list of basic operation instructions for common subexpression elimination
     //index: 0-add, 1-sub, 2-mul, 3-div, 4-const, 5-neg
@@ -43,13 +38,11 @@ public class BasicBlock {
         instructions = new ArrayList<>();
         instructionIDs = new ArrayList<>();
         valueInstructionMap = new HashMap<>();
-        nestedValueInstructionMap = new HashMap<>();
         parentBlocks = new ArrayList<>();
         childBlocks = new ArrayList<>();
         declaredVariables = new ArrayList<>();
         assignedVariables = new HashSet<>();
         dominatorTree = new InstructionLinkedList[9];
-        //instructionValueMap = ArrayListMultimap.create();
         phiIndex = 0;
         whileBlock = false;
         condBlock = null;
@@ -72,21 +65,8 @@ public class BasicBlock {
         return instructions.get(last);
     }
 
-    Instruction removeLastInstruction() {
-        int last = instructions.size() - 1;
-        return instructions.remove(last);
-    }
-
     void setLastInstruction(Instruction instruction) {
         int last = instructions.size() - 1;
         instructions.set(last, instruction);
-    }
-
-    Instruction getAnyInstruction(int index) {
-        return instructions.get(index);
-    }
-
-    void setAnyInstruction(int index, Instruction instruction) {
-        instructions.set(index, instruction);
     }
 }
