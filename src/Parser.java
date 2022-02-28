@@ -7,6 +7,7 @@ public class Parser {
     Instruction assignZeroInstruction;
     Operand zeroOperand;
     Set<Integer> visitedBlocks;
+    Map<Integer, Function> functionInfo;
 
     public Parser(String fileName) throws IOException, SyntaxException {
         this.lexer = new Lexer(fileName);
@@ -14,6 +15,7 @@ public class Parser {
         zeroOperand = new Operand(true, 0, null, -1);
         assignZeroInstruction = new Instruction(Operators.constant, zeroOperand, zeroOperand);
         visitedBlocks = new HashSet<>();
+        functionInfo = new HashMap<>();
     }
 
     IntermediateTree getIntermediateRepresentation() throws SyntaxException, IOException {
@@ -52,6 +54,23 @@ public class Parser {
         }
 
         //funcdecl
+        if(token.kind == TokenKind.reservedWord && (token.id == ReservedWords.voidDefaultId.ordinal())){
+            token = lexer.nextToken();
+            if(token.kind == TokenKind.reservedWord && (token.id == ReservedWords.functionDefaultId.ordinal())){
+                boolean isVoid = true;
+                token = lexer.nextToken();
+                funcDecl(isVoid);
+            }
+            else{
+                error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "void");
+            }
+        }
+
+        if(token.kind == TokenKind.reservedWord && (token.id == ReservedWords.functionDefaultId.ordinal())){
+            token = lexer.nextToken();
+            boolean isVoid = false;
+            funcDecl(isVoid);
+        }
 
         if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingCurlyBracketDefaultId.ordinal()) {
             token = lexer.nextToken();
@@ -68,6 +87,62 @@ public class Parser {
         if (token.kind != TokenKind.reservedSymbol || token.id != ReservedWords.dotDefaultId.ordinal()) {
             //if no ., error
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, ".");
+        }
+    }
+
+    private void funcDecl(boolean isVoid) throws SyntaxException, IOException {
+        if(token.kind != TokenKind.identity){
+            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "identity");
+        }
+        int identity = token.id;
+        Function function = new Function(isVoid);
+        IntermediateTree irTree = function.irTree;
+        functionInfo.put(identity, function);
+        token = lexer.nextToken();
+        if (token.kind != TokenKind.identity) {
+            //error
+            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "identity");
+        }
+        function.formalParameters.add(token.id);
+        irTree.current.declaredVariables.add(token.id);
+        token = lexer.nextToken();
+        while (token.kind == TokenKind.reservedSymbol && (token.id == ReservedWords.commaDefaultId.ordinal())) {
+            token = lexer.nextToken();
+            if (token.kind != TokenKind.identity) {
+                //error
+                error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "identity");
+            }
+            function.formalParameters.add(token.id);
+            irTree.current.declaredVariables.add(token.id);
+            token = lexer.nextToken();
+            //store ident?
+        }
+        //need to check if var or array
+        if (token.kind != TokenKind.reservedSymbol || token.id != ReservedWords.semicolonDefaultId.ordinal()) {
+            //error
+            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, ";");
+        }
+        if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingCurlyBracketDefaultId.ordinal()) {
+            token = lexer.nextToken();
+            funcBody(irTree); //parse statement sequence
+        } else {
+            //if no {, error
+            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "{");
+        }
+    }
+
+    private void funcBody(IntermediateTree irTree) throws SyntaxException, IOException {
+        if (token.kind == TokenKind.reservedWord && (token.id == ReservedWords.varDefaultId.ordinal() || token.id == ReservedWords.arrayDefaultId.ordinal())) {
+            //parse all variables
+            varDecl(irTree);
+
+            while (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.semicolonDefaultId.ordinal()) {
+                //after ";" , check if next is var decl
+                token = lexer.nextToken();
+                if (token.kind == TokenKind.reservedWord && (token.id == ReservedWords.varDefaultId.ordinal() || token.id == ReservedWords.arrayDefaultId.ordinal())) {
+                    varDecl(irTree);
+                }
+            }
         }
     }
 

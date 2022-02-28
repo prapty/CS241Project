@@ -1,3 +1,4 @@
+import javax.swing.*;
 import java.util.*;
 
 public class BasicBlock {
@@ -35,6 +36,10 @@ public class BasicBlock {
     boolean visbranch;
 
     public BasicBlock() {
+        IDNum = instrNum;
+        instrNum++;
+        vis = false;
+        visbranch = false;
         instructions = new ArrayList<>();
         instructionIDs = new ArrayList<>();
         valueInstructionMap = new HashMap<>();
@@ -48,12 +53,58 @@ public class BasicBlock {
         condBlock = null;
         isCond = false;
         nested=0;
-
         dominatorBlock = null;
+    }
+
+    public BasicBlock(BasicBlock block, Map<Integer, BasicBlock> copyMap) {
+        instructions = new ArrayList<>();
+        for(int i=0; i<block.instructions.size(); i++){
+            instructions.add(new Instruction(block.instructions.get(0)));
+        }
+
+        instructionIDs = new ArrayList<>();
+        instructionIDs.addAll(block.instructionIDs);
+
+        valueInstructionMap = new HashMap<>();
+        valueInstructionMap.putAll(block.valueInstructionMap);
+
+        parentBlocks = new ArrayList<>();
+        for(int i=0; i<block.parentBlocks.size(); i++){
+            BasicBlock oldParent = block.parentBlocks.get(i);
+            BasicBlock newParent = copyMap.get(oldParent.IDNum);
+            if(newParent == null){
+                newParent = new BasicBlock(oldParent, copyMap);
+            }
+            parentBlocks.add(newParent);
+        }
+        childBlocks = new ArrayList<>();
+        for(int i=0; i<block.childBlocks.size(); i++){
+            BasicBlock oldChild = block.childBlocks.get(i);
+            BasicBlock newChild = copyMap.get(oldChild.IDNum);
+            if(newChild == null){
+                newChild = new BasicBlock(oldChild, copyMap);
+            }
+            childBlocks.add(newChild);
+        }
+
+        declaredVariables = new ArrayList<>();
+        declaredVariables.addAll(block.declaredVariables);
+
+        assignedVariables = new HashSet<>();
+        assignedVariables.addAll(block.assignedVariables);
+
+        dominatorTree = block.dominatorTree.clone();
+        phiIndex = block.phiIndex;
+        whileBlock = block.whileBlock;
+        condBlock = new BasicBlock(block.condBlock, copyMap);
+        isCond = block.isCond;
+        nested=block.nested;
+        dominatorBlock = block.dominatorBlock;
         IDNum = instrNum;
         instrNum++;
-        vis = false;
-        visbranch = false;
+        vis = block.vis;
+        visbranch = block.visbranch;
+        copyMap.put(block.IDNum, this);
     }
 
     Instruction getLastInstruction() {

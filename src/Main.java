@@ -10,6 +10,11 @@ public class Main {
             String outputFileName = "outputCodeDot.dot";
             Dot dot = new Dot(outputFileName);
             dot.makeDotGraph(intermediateTree);
+
+//            IntermediateTree copyIrTree = intermediateTree.getCopyIrTree();
+//            String copyOutputFileName = "copyOutputCodeDot.dot";
+//            Dot copyDot = new Dot(copyOutputFileName);
+//            copyDot.makeDotGraph(copyIrTree);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (SyntaxException e) {
