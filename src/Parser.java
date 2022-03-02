@@ -54,19 +54,18 @@ public class Parser {
         }
 
         //funcdecl
-        if(token.kind == TokenKind.reservedWord && (token.id == ReservedWords.voidDefaultId.ordinal())){
+        if (token.kind == TokenKind.reservedWord && (token.id == ReservedWords.voidDefaultId.ordinal())) {
             token = lexer.nextToken();
-            if(token.kind == TokenKind.reservedWord && (token.id == ReservedWords.functionDefaultId.ordinal())){
+            if (token.kind == TokenKind.reservedWord && (token.id == ReservedWords.functionDefaultId.ordinal())) {
                 boolean isVoid = true;
                 token = lexer.nextToken();
                 funcDecl(isVoid);
-            }
-            else{
+            } else {
                 error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "void");
             }
         }
 
-        if(token.kind == TokenKind.reservedWord && (token.id == ReservedWords.functionDefaultId.ordinal())){
+        if (token.kind == TokenKind.reservedWord && (token.id == ReservedWords.functionDefaultId.ordinal())) {
             token = lexer.nextToken();
             boolean isVoid = false;
             funcDecl(isVoid);
@@ -91,7 +90,7 @@ public class Parser {
     }
 
     private void funcDecl(boolean isVoid) throws SyntaxException, IOException {
-        if(token.kind != TokenKind.identity){
+        if (token.kind != TokenKind.identity) {
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "identity");
         }
         int identity = token.id;
@@ -194,6 +193,10 @@ public class Parser {
         }
         Token left = token; //change when considering arrays
         token = lexer.nextToken();
+        if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingThirdBracketDefaultId.ordinal()) {
+            arrayDesignator(irTree, left);
+
+        }
         if (token.kind != TokenKind.relOp && token.id != ReservedWords.assignmentSymbolDefaultId.ordinal()) {
             //error
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "->");
@@ -638,15 +641,32 @@ public class Parser {
     }
 
     private void varDecl(IntermediateTree irTree) throws SyntaxException, IOException {
-//        if (token.id == ReservedWords.varDefaultId.ordinal()) {
-//        } //for when we do array
+        boolean array = false;
+        ArrayList<Integer> dimensionArray = new ArrayList<>();
+        if (token.id == ReservedWords.varDefaultId.ordinal()) {
+            token = lexer.nextToken();
+            if (token.kind != TokenKind.identity) {
+                //error
+                error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "identity");
+            }
+            irTree.current.declaredVariables.add(token.id);
 
-        token = lexer.nextToken();
-        if (token.kind != TokenKind.identity) {
-            //error
-            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "identity");
+        } else if (token.id == ReservedWords.arrayDefaultId.ordinal()) {
+            array = true;
+
+            token = lexer.nextToken();
+            while (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingThirdBracketDefaultId.ordinal()) {
+                token = lexer.nextToken();
+                dimensionArray.add(token.val);
+                token = lexer.nextToken();
+                token = lexer.nextToken();
+            }
+            irTree.current.declaredVariables.add(token.id);
+            ArrayIdent arrayIdent = new ArrayIdent(token);
+            arrayIdent.dimensions = dimensionArray;
+//            irTree.current.ArrayIdentifiers.add(arrayIdent);
+            irTree.current.arrayMap.put(token, arrayIdent);
         }
-        irTree.current.declaredVariables.add(token.id);
         token = lexer.nextToken();
         while (token.kind == TokenKind.reservedSymbol && (token.id == ReservedWords.commaDefaultId.ordinal())) {
             token = lexer.nextToken();
@@ -655,8 +675,13 @@ public class Parser {
                 error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "ident");
             }
             irTree.current.declaredVariables.add(token.id);
+            if (array) {
+                ArrayIdent arrayIdent = new ArrayIdent(token);
+                arrayIdent.dimensions = dimensionArray;
+//                irTree.current.ArrayIdentifiers.add(arrayIdent);
+                irTree.current.arrayMap.put(token, arrayIdent);
+            }
             token = lexer.nextToken();
-            //store ident?
         }
         //need to check if var or array
         if (token.kind != TokenKind.reservedSymbol || token.id != ReservedWords.semicolonDefaultId.ordinal()) {
@@ -835,11 +860,18 @@ public class Parser {
             }
 
         } else if (token.kind == TokenKind.identity || token.kind == TokenKind.number) {
+            Token ident = token;
             if (token.kind == TokenKind.identity) {
                 //identity
                 if (!irTree.current.declaredVariables.contains(token.id)) {
                     error(ErrorInfo.UNDECLARED_VARIABLE_PARSER_ERROR, "");
                 }
+
+                token = lexer.nextToken();
+                if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingThirdBracketDefaultId.ordinal()) {
+                    arrayDesignator(irTree, ident);
+                }
+
                 Instruction valueGenerator = irTree.current.valueInstructionMap.get(token.id);
                 if (valueGenerator == null) {
                     warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);
@@ -868,8 +900,9 @@ public class Parser {
                     node.previous = irTree.constants.dominatorTree[Operators.constant.ordinal()];
                     irTree.constants.dominatorTree[Operators.constant.ordinal()] = node;
                 }
+                token = lexer.nextToken();
             }
-            token = lexer.nextToken();
+
         } else if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.callDefaultId.ordinal()) {
             token = lexer.nextToken();
             result = funcCall(irTree);
@@ -878,6 +911,26 @@ public class Parser {
             }
         }
         return result;
+    }
+
+    private void arrayDesignator(IntermediateTree irTree, Token ident) throws SyntaxException, IOException {
+//        while (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingThirdBracketDefaultId.ordinal()) {
+//            token = lexer.nextToken();
+//            Operand opp = Expression(irTree);
+//
+//            token = lexer.nextToken();
+//        }
+        ArrayIdent arr = irTree.current.arrayMap.get(ident);
+        Operand curOp = null;
+        for (int i = 0; i < arr.dimensions.size(); i++) {
+            token=lexer.nextToken();
+            curOp = Expression(irTree);
+
+        }
+        // create instructions: mul/muli, add FP arra base, adda
+        //then will be either store or load
+        // need to add Hashmap when creating new block, or static.
+
     }
 
     private void error(String message, String expected) throws SyntaxException {

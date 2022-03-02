@@ -25,6 +25,10 @@ public class BasicBlock {
     BasicBlock condBlock; // points to the direct upper cond block. if nested, the condblock points to outer condblock
     int nested; // 1 if simple loop, increase by 1 for each nested while
 
+
+    List<ArrayIdent> ArrayIdentifiers;
+    HashMap<Token, ArrayIdent> arrayMap;
+
     boolean makeDuplicate;
     boolean nestedBlock;
     //indicates the index where phi instruction should be added
@@ -54,6 +58,8 @@ public class BasicBlock {
         isCond = false;
         nested=0;
         dominatorBlock = null;
+        ArrayIdentifiers = new ArrayList<>();
+        arrayMap = new HashMap<>();
     }
 
     public BasicBlock(BasicBlock block, Map<Integer, BasicBlock> copyMap) {
