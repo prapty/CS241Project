@@ -913,7 +913,7 @@ public class Parser {
         return result;
     }
 
-    private void arrayDesignator(IntermediateTree irTree, Token ident) throws SyntaxException, IOException {
+    private Operand arrayDesignator(IntermediateTree irTree, Token ident) throws SyntaxException, IOException {
 //        while (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingThirdBracketDefaultId.ordinal()) {
 //            token = lexer.nextToken();
 //            Operand opp = Expression(irTree);
@@ -921,16 +921,52 @@ public class Parser {
 //            token = lexer.nextToken();
 //        }
         ArrayIdent arr = irTree.current.arrayMap.get(ident);
-        Operand curOp = null;
+        Operand curOp;
+        ArrayList<Operand> indexes = new ArrayList<>();
         for (int i = 0; i < arr.dimensions.size(); i++) {
-            token=lexer.nextToken();
+            token = lexer.nextToken();
             curOp = Expression(irTree);
-
+            indexes.add(curOp);
         }
+        Operand ret;
+        Operand ofs;
+        if (indexes.size() == 1) {
+            //simple array
+            ofs = null;
+        } else {
+            boolean addIn = false;
+            Operand op = indexes.get(indexes.size() - 1);
+            for (int i = indexes.size() - 2; i >= 0; i--) {
+                if (addIn) {
+                    Instruction add = new Instruction(Operators.add, op, indexes.get(i));
+                    irTree.current.instructions.add(add); //need to check duplicates
+                    op = new Operand(false, -1, add.IDNum, -1);
+                    addIn = false;
+                } else {
+                    Instruction mul = new Instruction(Operators.mul, op, indexes.get(i));
+                    irTree.current.instructions.add(mul); // need to check duplicates
+                    op = new Operand(false, -1, mul.IDNum, -1);
+                    addIn = true;
+                }
+            }
+            Operand four = new Operand(true, 4, null, -1);
+            Instruction constantFour = new Instruction(Operators.constant, four, four); //check duplicate, add to bb
+            four = new Operand(true, 4, constantFour.IDNum, -1);
+            Instruction offset = new Instruction(Operators.mul, op, four); //check duplicate, add to bb
+            ofs = new Operand(false, -1, offset.IDNum, -1);
+        }
+        Operand FP = new Operand("FP");
+        Operand arrayBase = new Operand(arr.getStartingAddress() + "(FP)");
+        Instruction base = new Instruction(Operators.add, FP, arrayBase); //check duplicate, add to bb
+        Operand bas = new Operand(false, -1, base.IDNum, -1);
+        Instruction adda = new Instruction(Operators.adda, ofs, bas);
+
+        ret = new Operand(false, -1, adda.IDNum, -1);
+
         // create instructions: mul/muli, add FP arra base, adda
         //then will be either store or load
         // need to add Hashmap when creating new block, or static.
-
+        return ret;
     }
 
     private void error(String message, String expected) throws SyntaxException {

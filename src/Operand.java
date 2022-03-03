@@ -4,6 +4,7 @@ public class Operand {
     int id;
     Integer valGenerator;
     Instruction returnVal;
+    String arraybase;
 
     public Operand() {
     }
@@ -20,5 +21,9 @@ public class Operand {
         this.constVal = constVal;
         this.valGenerator = valGenerator;
         this.id=id;
+    }
+
+    public Operand(String arrayBase){
+        arraybase = arrayBase;
     }
 }

@@ -26,7 +26,7 @@ public class BasicBlock {
     int nested; // 1 if simple loop, increase by 1 for each nested while
 
 
-    List<ArrayIdent> ArrayIdentifiers;
+//    List<ArrayIdent> ArrayIdentifiers;
     HashMap<Token, ArrayIdent> arrayMap;
 
     boolean makeDuplicate;
@@ -58,7 +58,7 @@ public class BasicBlock {
         isCond = false;
         nested=0;
         dominatorBlock = null;
-        ArrayIdentifiers = new ArrayList<>();
+//        ArrayIdentifiers = new ArrayList<>();
         arrayMap = new HashMap<>();
     }
 
