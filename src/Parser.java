@@ -132,6 +132,10 @@ public class Parser {
         }
         Token left = token; //change when considering arrays
         token = lexer.nextToken();
+        if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingThirdBracketDefaultId.ordinal()) {
+            arrayDesignator(irTree, left);
+
+        }
         if (token.kind != TokenKind.relOp && token.id != ReservedWords.assignmentSymbolDefaultId.ordinal()) {
             //error
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "->");
@@ -576,15 +580,32 @@ public class Parser {
     }
 
     private void varDecl(IntermediateTree irTree) throws SyntaxException, IOException {
-//        if (token.id == ReservedWords.varDefaultId.ordinal()) {
-//        } //for when we do array
+        boolean array = false;
+        ArrayList<Integer> dimensionArray = new ArrayList<>();
+        if (token.id == ReservedWords.varDefaultId.ordinal()) {
+            token = lexer.nextToken();
+            if (token.kind != TokenKind.identity) {
+                //error
+                error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "identity");
+            }
+            irTree.current.declaredVariables.add(token.id);
 
-        token = lexer.nextToken();
-        if (token.kind != TokenKind.identity) {
-            //error
-            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "identity");
+        } else if (token.id == ReservedWords.arrayDefaultId.ordinal()) {
+            array = true;
+
+            token = lexer.nextToken();
+            while (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingThirdBracketDefaultId.ordinal()) {
+                token = lexer.nextToken();
+                dimensionArray.add(token.val);
+                token = lexer.nextToken();
+                token = lexer.nextToken();
+            }
+            irTree.current.declaredVariables.add(token.id);
+            ArrayIdent arrayIdent = new ArrayIdent(token);
+            arrayIdent.dimensions = dimensionArray;
+//            irTree.current.ArrayIdentifiers.add(arrayIdent);
+            irTree.current.arrayMap.put(token, arrayIdent);
         }
-        irTree.current.declaredVariables.add(token.id);
         token = lexer.nextToken();
         while (token.kind == TokenKind.reservedSymbol && (token.id == ReservedWords.commaDefaultId.ordinal())) {
             token = lexer.nextToken();
@@ -593,6 +614,12 @@ public class Parser {
                 error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "ident");
             }
             irTree.current.declaredVariables.add(token.id);
+            if (array) {
+                ArrayIdent arrayIdent = new ArrayIdent(token);
+                arrayIdent.dimensions = dimensionArray;
+//                irTree.current.ArrayIdentifiers.add(arrayIdent);
+                irTree.current.arrayMap.put(token, arrayIdent);
+            }
             token = lexer.nextToken();
             //store ident?
         }
@@ -865,11 +892,18 @@ public class Parser {
             }
 
         } else if (token.kind == TokenKind.identity || token.kind == TokenKind.number) {
+            Token ident = token;
             if (token.kind == TokenKind.identity) {
                 //identity
                 if (!irTree.current.declaredVariables.contains(token.id)) {
                     error(ErrorInfo.UNDECLARED_VARIABLE_PARSER_ERROR, "");
                 }
+
+                token = lexer.nextToken();
+                if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingThirdBracketDefaultId.ordinal()) {
+                    arrayDesignator(irTree, ident);
+                }
+
                 Instruction valueGenerator = irTree.current.valueInstructionMap.get(token.id);
                 if (valueGenerator == null) {
                     warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);
@@ -898,8 +932,9 @@ public class Parser {
                     node.previous = irTree.constants.dominatorTree[Operators.constant.ordinal()];
                     irTree.constants.dominatorTree[Operators.constant.ordinal()] = node;
                 }
+                token = lexer.nextToken();
             }
-            token = lexer.nextToken();
+
         } else if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.callDefaultId.ordinal()) {
             token = lexer.nextToken();
             result = funcCall(irTree);
@@ -908,6 +943,62 @@ public class Parser {
             }
         }
         return result;
+    }
+
+    private Operand arrayDesignator(IntermediateTree irTree, Token ident) throws SyntaxException, IOException {
+//        while (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingThirdBracketDefaultId.ordinal()) {
+//            token = lexer.nextToken();
+//            Operand opp = Expression(irTree);
+//
+//            token = lexer.nextToken();
+//        }
+        ArrayIdent arr = irTree.current.arrayMap.get(ident);
+        Operand curOp;
+        ArrayList<Operand> indexes = new ArrayList<>();
+        for (int i = 0; i < arr.dimensions.size(); i++) {
+            token = lexer.nextToken();
+            curOp = Expression(irTree);
+            indexes.add(curOp);
+        }
+        Operand ret;
+        Operand ofs;
+        if (indexes.size() == 1) {
+            //simple array
+            ofs = null;
+        } else {
+            boolean addIn = false;
+            Operand op = indexes.get(indexes.size() - 1);
+            for (int i = indexes.size() - 2; i >= 0; i--) {
+                if (addIn) {
+                    Instruction add = new Instruction(Operators.add, op, indexes.get(i));
+                    irTree.current.instructions.add(add); //need to check duplicates
+                    op = new Operand(false, -1, add.IDNum, -1);
+                    addIn = false;
+                } else {
+                    Instruction mul = new Instruction(Operators.mul, op, indexes.get(i));
+                    irTree.current.instructions.add(mul); // need to check duplicates
+                    op = new Operand(false, -1, mul.IDNum, -1);
+                    addIn = true;
+                }
+            }
+            Operand four = new Operand(true, 4, null, -1);
+            Instruction constantFour = new Instruction(Operators.constant, four, four); //check duplicate, add to bb
+            four = new Operand(true, 4, constantFour.IDNum, -1);
+            Instruction offset = new Instruction(Operators.mul, op, four); //check duplicate, add to bb
+            ofs = new Operand(false, -1, offset.IDNum, -1);
+        }
+        Operand FP = new Operand("FP");
+        Operand arrayBase = new Operand(arr.getStartingAddress() + "(FP)");
+        Instruction base = new Instruction(Operators.add, FP, arrayBase); //check duplicate, add to bb
+        Operand bas = new Operand(false, -1, base.IDNum, -1);
+        Instruction adda = new Instruction(Operators.adda, ofs, bas);
+
+        ret = new Operand(false, -1, adda.IDNum, -1);
+
+        // create instructions: mul/muli, add FP arra base, adda
+        //then will be either store or load
+        // need to add Hashmap when creating new block, or static.
+        return ret;
     }
 
     private void error(String message, String expected) throws SyntaxException {
