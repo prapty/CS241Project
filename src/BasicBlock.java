@@ -17,7 +17,7 @@ public class BasicBlock {
     Map<Integer, Instruction> valueInstructionMap;
 
     //Array to maintain linked list of basic operation instructions for common subexpression elimination
-    //index: 0-add, 1-sub, 2-mul, 3-div, 4-const, 5-neg
+    //index: 0-add, 1-sub, 2-mul, 3-div, 4-const, 5-neg, 6-adda, 7-load
     InstructionLinkedList[] dominatorTree;
     //indicates whether current block is a while block
     boolean whileBlock; //if it is part of a while loop
@@ -26,8 +26,8 @@ public class BasicBlock {
     int nested; // 1 if simple loop, increase by 1 for each nested while
 
 
-//    List<ArrayIdent> ArrayIdentifiers;
-    HashMap<Token, ArrayIdent> arrayMap;
+    //    List<ArrayIdent> ArrayIdentifiers;
+    HashMap<Integer, ArrayIdent> arrayMap;
 
     boolean makeDuplicate;
     boolean nestedBlock;
@@ -56,7 +56,7 @@ public class BasicBlock {
         whileBlock = false;
         condBlock = null;
         isCond = false;
-        nested=0;
+        nested = 0;
         dominatorBlock = null;
 //        ArrayIdentifiers = new ArrayList<>();
         arrayMap = new HashMap<>();
@@ -64,7 +64,7 @@ public class BasicBlock {
 
     public BasicBlock(BasicBlock block, Map<Integer, BasicBlock> copyMap) {
         instructions = new ArrayList<>();
-        for(int i=0; i<block.instructions.size(); i++){
+        for (int i = 0; i < block.instructions.size(); i++) {
             instructions.add(new Instruction(block.instructions.get(0)));
         }
 
@@ -75,19 +75,19 @@ public class BasicBlock {
         valueInstructionMap.putAll(block.valueInstructionMap);
 
         parentBlocks = new ArrayList<>();
-        for(int i=0; i<block.parentBlocks.size(); i++){
+        for (int i = 0; i < block.parentBlocks.size(); i++) {
             BasicBlock oldParent = block.parentBlocks.get(i);
             BasicBlock newParent = copyMap.get(oldParent.IDNum);
-            if(newParent == null){
+            if (newParent == null) {
                 newParent = new BasicBlock(oldParent, copyMap);
             }
             parentBlocks.add(newParent);
         }
         childBlocks = new ArrayList<>();
-        for(int i=0; i<block.childBlocks.size(); i++){
+        for (int i = 0; i < block.childBlocks.size(); i++) {
             BasicBlock oldChild = block.childBlocks.get(i);
             BasicBlock newChild = copyMap.get(oldChild.IDNum);
-            if(newChild == null){
+            if (newChild == null) {
                 newChild = new BasicBlock(oldChild, copyMap);
             }
             childBlocks.add(newChild);
@@ -104,7 +104,7 @@ public class BasicBlock {
         whileBlock = block.whileBlock;
         condBlock = new BasicBlock(block.condBlock, copyMap);
         isCond = block.isCond;
-        nested=block.nested;
+        nested = block.nested;
         dominatorBlock = block.dominatorBlock;
         IDNum = instrNum;
         instrNum++;

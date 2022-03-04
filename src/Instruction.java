@@ -5,6 +5,7 @@ public class Instruction {
     int IDNum;
     static int instrNum = 1;
     boolean duplicate;
+    int arrayID;
 
     public Instruction(Operators operator, Operand firstOp, Operand secondOp) {
         this.operator = operator;
@@ -28,6 +29,7 @@ public class Instruction {
         secondOp = null;
         IDNum = instrNum;
         instrNum++;
+        arrayID = 0;
     }
 
     public Instruction(Instruction instruction) {
@@ -41,21 +43,27 @@ public class Instruction {
     public String toString() {
         String ts = operator.toString();
         if (firstOp != null) {
-            if (firstOp.valGenerator!= null) {
+            if (firstOp.arraybase != null) {
+                ts += " " + firstOp.arraybase + " ";
+                ;
+            } else if (firstOp.valGenerator != null) {
                 ts += "(" + firstOp.valGenerator + ")";
             } else {
                 ts += "#" + firstOp.constVal;
             }
         }
         if (secondOp != null) {
-            if (secondOp.valGenerator!= null) {
+            if (secondOp.arraybase != null) {
+                ts += secondOp.arraybase;
+                ;
+            } else if (secondOp.valGenerator != null) {
                 ts += "(" + secondOp.valGenerator + ")";
             } else {
                 ts += "#" + secondOp.constVal;
             }
         }
-        if(duplicate){
-            ts +=", duplicate";
+        if (duplicate) {
+            ts += ", duplicate";
         }
         return ts;
     }

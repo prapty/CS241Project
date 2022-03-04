@@ -1,0 +1,5 @@
+main
+var b; array[3][3] a; {
+let a[2][2] <- 1;
+let b <- a[2][2];
+}.
