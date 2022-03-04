@@ -6,6 +6,13 @@ public class Instruction {
     static int instrNum = 1;
     boolean duplicate;
 
+    public Instruction(int id) {
+        this.operator = Operators.empty;
+        firstOp = null;
+        secondOp = null;
+        IDNum = id;
+    }
+
     public Instruction(Operators operator, Operand firstOp, Operand secondOp) {
         this.operator = operator;
         this.firstOp = firstOp;
@@ -32,8 +39,18 @@ public class Instruction {
 
     public Instruction(Instruction instruction) {
         this.operator = instruction.operator;
-        this.firstOp = new Operand(instruction.firstOp);
-        this.secondOp = new Operand(instruction.secondOp);
+        if(instruction.firstOp==null){
+            this.firstOp = null;
+        }
+        else{
+            this.firstOp = new Operand(instruction.firstOp);
+        }
+        if(instruction.secondOp==null){
+            this.secondOp = null;
+        }
+        else{
+            this.secondOp = new Operand(instruction.secondOp);
+        }
         IDNum = instrNum;
         instrNum++;
     }

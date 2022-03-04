@@ -6,12 +6,12 @@ public class Main {
         try {
             Parser parser = new Parser(fileName);
             IntermediateTree intermediateTree = parser.getIntermediateRepresentation();
+            //IntermediateTree copyIrTree = intermediateTree.getCopyIrTree();
 
             String outputFileName = "outputCodeDot.dot";
             Dot dot = new Dot(outputFileName);
             dot.makeDotGraph(intermediateTree);
 
-//            IntermediateTree copyIrTree = intermediateTree.getCopyIrTree();
 //            String copyOutputFileName = "copyOutputCodeDot.dot";
 //            Dot copyDot = new Dot(copyOutputFileName);
 //            copyDot.makeDotGraph(copyIrTree);

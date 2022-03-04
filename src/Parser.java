@@ -54,22 +54,16 @@ public class Parser {
         }
 
         //funcdecl
-        if(token.kind == TokenKind.reservedWord && (token.id == ReservedWords.voidDefaultId.ordinal())){
-            token = lexer.nextToken();
-            if(token.kind == TokenKind.reservedWord && (token.id == ReservedWords.functionDefaultId.ordinal())){
-                boolean isVoid = true;
-                token = lexer.nextToken();
-                funcDecl(isVoid);
-            }
-            else{
-                error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "void");
-            }
-        }
+        if(token.kind == TokenKind.reservedWord && (token.id == ReservedWords.voidDefaultId.ordinal()||token.id == ReservedWords.functionDefaultId.ordinal())){
+            funcDecl();
 
-        if(token.kind == TokenKind.reservedWord && (token.id == ReservedWords.functionDefaultId.ordinal())){
-            token = lexer.nextToken();
-            boolean isVoid = false;
-            funcDecl(isVoid);
+            while (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.semicolonDefaultId.ordinal()) {
+                //after ";" , check if next is var decl
+                token = lexer.nextToken();
+                if (token.kind == TokenKind.reservedWord && (token.id == ReservedWords.voidDefaultId.ordinal() || token.id == ReservedWords.functionDefaultId.ordinal())) {
+                    funcDecl();
+                }
+            }
         }
 
         if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingCurlyBracketDefaultId.ordinal()) {
@@ -87,62 +81,6 @@ public class Parser {
         if (token.kind != TokenKind.reservedSymbol || token.id != ReservedWords.dotDefaultId.ordinal()) {
             //if no ., error
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, ".");
-        }
-    }
-
-    private void funcDecl(boolean isVoid) throws SyntaxException, IOException {
-        if(token.kind != TokenKind.identity){
-            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "identity");
-        }
-        int identity = token.id;
-        Function function = new Function(isVoid);
-        IntermediateTree irTree = function.irTree;
-        functionInfo.put(identity, function);
-        token = lexer.nextToken();
-        if (token.kind != TokenKind.identity) {
-            //error
-            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "identity");
-        }
-        function.formalParameters.add(token.id);
-        irTree.current.declaredVariables.add(token.id);
-        token = lexer.nextToken();
-        while (token.kind == TokenKind.reservedSymbol && (token.id == ReservedWords.commaDefaultId.ordinal())) {
-            token = lexer.nextToken();
-            if (token.kind != TokenKind.identity) {
-                //error
-                error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "identity");
-            }
-            function.formalParameters.add(token.id);
-            irTree.current.declaredVariables.add(token.id);
-            token = lexer.nextToken();
-            //store ident?
-        }
-        //need to check if var or array
-        if (token.kind != TokenKind.reservedSymbol || token.id != ReservedWords.semicolonDefaultId.ordinal()) {
-            //error
-            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, ";");
-        }
-        if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingCurlyBracketDefaultId.ordinal()) {
-            token = lexer.nextToken();
-            funcBody(irTree); //parse statement sequence
-        } else {
-            //if no {, error
-            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "{");
-        }
-    }
-
-    private void funcBody(IntermediateTree irTree) throws SyntaxException, IOException {
-        if (token.kind == TokenKind.reservedWord && (token.id == ReservedWords.varDefaultId.ordinal() || token.id == ReservedWords.arrayDefaultId.ordinal())) {
-            //parse all variables
-            varDecl(irTree);
-
-            while (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.semicolonDefaultId.ordinal()) {
-                //after ";" , check if next is var decl
-                token = lexer.nextToken();
-                if (token.kind == TokenKind.reservedWord && (token.id == ReservedWords.varDefaultId.ordinal() || token.id == ReservedWords.arrayDefaultId.ordinal())) {
-                    varDecl(irTree);
-                }
-            }
         }
     }
 
@@ -664,6 +602,98 @@ public class Parser {
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, ";");
         }
         //; is handled elsewhere
+    }
+
+    private void funcDecl() throws SyntaxException, IOException {
+        boolean isVoid=false;
+        if(token.kind == TokenKind.reservedWord && (token.id == ReservedWords.voidDefaultId.ordinal())){
+            token = lexer.nextToken();
+            if(token.kind == TokenKind.reservedWord && (token.id == ReservedWords.functionDefaultId.ordinal())){
+                isVoid = true;
+            }
+            else{
+                error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "void");
+            }
+        }
+        token = lexer.nextToken();
+        if(token.kind != TokenKind.identity){
+            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "identity");
+        }
+        int identity = token.id;
+        Function function = new Function(isVoid);
+        functionInfo.put(identity, function);
+        token = lexer.nextToken();
+        if(token.kind == TokenKind.reservedSymbol && (token.id == ReservedWords.startingFirstBracketDefaultId.ordinal())){
+            formalParam(function);
+            while (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.commaDefaultId.ordinal()) {
+                formalParam(function);
+            }
+        }
+        else{
+            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "(");
+        }
+        if (token.kind != TokenKind.reservedSymbol || token.id != ReservedWords.endingFirstBracketDefaultId.ordinal()) {
+            //if no }, error
+            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, ")");
+        }
+        token = lexer.nextToken();
+        if (token.kind != TokenKind.reservedSymbol || token.id != ReservedWords.semicolonDefaultId.ordinal()) {
+            //if no }, error
+            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, ";");
+        }
+        token = lexer.nextToken();
+        funcBody(function);
+        token = lexer.nextToken();
+        if (token.kind != TokenKind.reservedSymbol || token.id != ReservedWords.semicolonDefaultId.ordinal()) {
+            //if no ., error
+            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, ";");
+        }
+    }
+
+    private void formalParam(Function function) throws SyntaxException, IOException {
+        token = lexer.nextToken();
+        if (token.kind != TokenKind.identity) {
+            //error
+            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "identity");
+        }
+        function.parameters.add(token.id);
+        function.irTree.current.declaredVariables.add(token.id);
+        int paramPosition = function.parameters.size();
+        Instruction placeHolder = new Instruction(paramPosition);
+        function.irTree.current.valueInstructionMap.put(token.id, placeHolder);
+
+        token = lexer.nextToken();
+    }
+
+    private void funcBody(Function function) throws SyntaxException, IOException {
+        IntermediateTree irTree = function.irTree;
+//        if(token.kind != TokenKind.reservedSymbol || (token.id != ReservedWords.startingCurlyBracketDefaultId.ordinal())){
+//            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "{");
+//        }
+        //token = lexer.nextToken();
+        if (token.kind == TokenKind.reservedWord && (token.id == ReservedWords.varDefaultId.ordinal() || token.id == ReservedWords.arrayDefaultId.ordinal())) {
+            //parse all variables
+            varDecl(irTree);
+
+            while (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.semicolonDefaultId.ordinal()) {
+                //after ";" , check if next is var decl
+                token = lexer.nextToken();
+                if (token.kind == TokenKind.reservedWord && (token.id == ReservedWords.varDefaultId.ordinal() || token.id == ReservedWords.arrayDefaultId.ordinal())) {
+                    varDecl(irTree);
+                }
+            }
+        }
+        if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingCurlyBracketDefaultId.ordinal()) {
+            token = lexer.nextToken();
+            statSequence(irTree); //parse statement sequence
+        } else {
+            //if no {, error
+            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "{");
+        }
+        if (token.kind != TokenKind.reservedSymbol || token.id != ReservedWords.endingCurlyBracketDefaultId.ordinal()) {
+            //if no }, error
+            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "}");
+        }
     }
 
     private Operand Expression(IntermediateTree irTree) throws IOException, SyntaxException {

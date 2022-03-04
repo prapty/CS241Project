@@ -59,7 +59,7 @@ public class BasicBlock {
     public BasicBlock(BasicBlock block, Map<Integer, BasicBlock> copyMap) {
         instructions = new ArrayList<>();
         for(int i=0; i<block.instructions.size(); i++){
-            instructions.add(new Instruction(block.instructions.get(0)));
+            instructions.add(new Instruction(block.instructions.get(i)));
         }
 
         instructionIDs = new ArrayList<>();
@@ -69,23 +69,23 @@ public class BasicBlock {
         valueInstructionMap.putAll(block.valueInstructionMap);
 
         parentBlocks = new ArrayList<>();
-        for(int i=0; i<block.parentBlocks.size(); i++){
-            BasicBlock oldParent = block.parentBlocks.get(i);
-            BasicBlock newParent = copyMap.get(oldParent.IDNum);
-            if(newParent == null){
-                newParent = new BasicBlock(oldParent, copyMap);
-            }
-            parentBlocks.add(newParent);
-        }
+//        for(int i=0; i<block.parentBlocks.size(); i++){
+//            BasicBlock oldParent = block.parentBlocks.get(i);
+//            BasicBlock newParent = copyMap.get(oldParent.IDNum);
+//            if(newParent == null){
+//                newParent = new BasicBlock(oldParent, copyMap);
+//            }
+//            parentBlocks.add(newParent);
+//        }
         childBlocks = new ArrayList<>();
-        for(int i=0; i<block.childBlocks.size(); i++){
-            BasicBlock oldChild = block.childBlocks.get(i);
-            BasicBlock newChild = copyMap.get(oldChild.IDNum);
-            if(newChild == null){
-                newChild = new BasicBlock(oldChild, copyMap);
-            }
-            childBlocks.add(newChild);
-        }
+//        for(int i=0; i<block.childBlocks.size(); i++){
+//            BasicBlock oldChild = block.childBlocks.get(i);
+//            BasicBlock newChild = copyMap.get(oldChild.IDNum);
+//            if(newChild == null){
+//                newChild = new BasicBlock(oldChild, copyMap);
+//            }
+//            childBlocks.add(newChild);
+//        }
 
         declaredVariables = new ArrayList<>();
         declaredVariables.addAll(block.declaredVariables);
@@ -96,7 +96,7 @@ public class BasicBlock {
         dominatorTree = block.dominatorTree.clone();
         phiIndex = block.phiIndex;
         whileBlock = block.whileBlock;
-        condBlock = new BasicBlock(block.condBlock, copyMap);
+        //condBlock = new BasicBlock(block.condBlock, copyMap);
         isCond = block.isCond;
         nested=block.nested;
         dominatorBlock = block.dominatorBlock;
