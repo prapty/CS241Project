@@ -5,6 +5,7 @@ public class Operand {
     Integer valGenerator;
     Instruction returnVal;
     String arraybase;
+    int arrayID;
 
     public Operand() {
     }

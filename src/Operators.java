@@ -21,5 +21,6 @@ public enum Operators {
     ble,
     blt,
     bge,
-    bgt
+    bgt,
+    kill
 }
