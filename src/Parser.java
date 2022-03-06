@@ -27,6 +27,12 @@ public class Parser {
         intermediateTree.constants.instructions.add(assignZeroInstruction);
         intermediateTree.constants.instructionIDs.add(assignZeroInstruction.IDNum);
         Computation(intermediateTree);
+//        intermediateTree.current.childBlocks.add(functionInfo.get(41).irTree.start);
+//        functionInfo.get(41).irTree.start.parentBlocks.add(intermediateTree.current);
+//        intermediateTree.current.childBlocks.add(functionInfo.get(45).irTree.start);
+//        functionInfo.get(45).irTree.start.parentBlocks.add(intermediateTree.current);
+        //return functionInfo.get(45).irTree;
+        //return functionInfo.get(41).irTree;
         return intermediateTree;
     }
 
@@ -413,6 +419,7 @@ public class Parser {
                 error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, ")");
             }
         }
+        //function.irTree = functionIrTree;
         //functions with no parameters. Can directly add IrTree of the function to the current block
 
         functionIrTree.constants.parentBlocks.add(irTree.current);

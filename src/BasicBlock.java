@@ -65,14 +65,13 @@ public class BasicBlock {
 
     public BasicBlock(BasicBlock block, Map<Integer, BasicBlock> copyMap, Map<Integer, Instruction>copyInstructionMap) {
         instructions = new ArrayList<>();
+        instructionIDs = new ArrayList<>();
         for(int i=0; i<block.instructions.size(); i++){
             //instructions.add(new Instruction(block.instructions.get(i), copyInstructionMap));
             instructions.add(new Instruction(block.instructions.get(i)));
+            instructionIDs.add(instructions.get(i).IDNum);
             copyInstructionMap.put(block.instructions.get(i).IDNum, instructions.get(i));
         }
-
-        instructionIDs = new ArrayList<>();
-        instructionIDs.addAll(block.instructionIDs);
 
         valueInstructionMap = new HashMap<>();
         for(int id: block.valueInstructionMap.keySet()){

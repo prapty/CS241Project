@@ -23,6 +23,7 @@ public class Dot {
         blocks.add(irTree.constants);
         blocks.get(0).visbranch = true;
         while (!blocks.isEmpty()) {
+
             makeBlockCode(blocks.get(0), lines, branchLines);
 //            for (BasicBlock b : blocks.get(0).dominatorBlocks) {
             if (blocks.get(0).dominatorBlock != null) {

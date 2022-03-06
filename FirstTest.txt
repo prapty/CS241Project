@@ -3,6 +3,10 @@ var a, b;
 void function test (x, y);
 var z;
 {
+  while x + 1 != y
+  	do
+  		let x <- x + 1;
+  	od;
   let z <- x + y;
   call OutputNum(z);
 };
@@ -10,20 +14,20 @@ void function smallTest();
 var z;
 {
   let z <- call InputNum();
+  if z < 0
+    then
+        let z <- z + 1;
+    else
+        let z <- z * 1;
+  fi;
   call OutputNum(z);
 };
 {
 	let a <- call InputNum();
 
 	let b <- a + 1;
-
-	while a + 1 != b
-	do
-		let a <- a + 1;
-	od;
-
-    call smallTest();
-    call test(a+b, a*b);
+	call smallTest();
+	call test(a+b, a*b);
 	call OutputNum(a);
 	call OutputNum(b);
 }.
