@@ -16,5 +16,6 @@ var z;
 		let a <- a + 1;
 	od;
 
+    call test(a+b, a*b);
 	call OutputNum(a);
 }.

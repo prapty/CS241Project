@@ -17,5 +17,13 @@ var z;
 
 	let b <- a + 1;
 
+	while a + 1 != b
+	do
+		let a <- a + 1;
+	od;
+
+    call smallTest();
+    call test(a+b, a*b);
 	call OutputNum(a);
+	call OutputNum(b);
 }.

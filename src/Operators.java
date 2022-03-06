@@ -5,13 +5,13 @@ public enum Operators {
     div,
     constant,
     neg,
+    adda,
+    load,
     cmp,
     read,
     write,
     writeNL,
     empty,
-    adda,
-    load,
     store,
     phi,
     end,
@@ -21,5 +21,6 @@ public enum Operators {
     ble,
     blt,
     bge,
-    bgt
+    bgt,
+    kill
 }
