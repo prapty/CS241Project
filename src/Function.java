@@ -12,7 +12,7 @@ public class Function {
         copyBlockMap = new HashMap<>();
         this.isVoid = isVoid;
     }
-    private void replaceParametersWithArguments(Map<Integer, Integer>positionArgumentMap, IntermediateTree copyIrTree){
+    public void replaceParametersWithArguments(Map<Integer, Integer>positionArgumentMap, IntermediateTree copyIrTree){
         ArrayList<BasicBlock> visited = new ArrayList<>();
         LinkedList<BasicBlock> toVisit = new LinkedList<>();
         toVisit.add(copyIrTree.start);
@@ -30,18 +30,22 @@ public class Function {
     private void modifyInstructionsWithArguments(BasicBlock block, Map<Integer, Integer>positionArgumentMap){
         for(int i=0; i<block.instructions.size(); i++){
             Instruction instruction = block.instructions.get(i);
-            Integer firstOpVal = instruction.firstOp.valGenerator;
-            if(firstOpVal!=null){
-                Integer firstOpReplacement = positionArgumentMap.get(firstOpVal);
-                if(firstOpReplacement != null){
-                    instruction.firstOp.valGenerator = firstOpReplacement;
+            if(instruction.firstOp!=null){
+                Integer firstOpVal = instruction.firstOp.valGenerator;
+                if(firstOpVal!=null){
+                    Integer firstOpReplacement = positionArgumentMap.get(firstOpVal);
+                    if(firstOpReplacement != null){
+                        instruction.firstOp.valGenerator = firstOpReplacement;
+                    }
                 }
             }
-            Integer secondOpVal = instruction.secondOp.valGenerator;
-            if(secondOpVal!=null){
-                Integer secondOpReplacement = positionArgumentMap.get(secondOpVal);
-                if(secondOpReplacement != null){
-                    instruction.secondOp.valGenerator = secondOpReplacement;
+            if(instruction.secondOp!=null){
+                Integer secondOpVal = instruction.secondOp.valGenerator;
+                if(secondOpVal!=null){
+                    Integer secondOpReplacement = positionArgumentMap.get(secondOpVal);
+                    if(secondOpReplacement != null){
+                        instruction.secondOp.valGenerator = secondOpReplacement;
+                    }
                 }
             }
         }

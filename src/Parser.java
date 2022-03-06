@@ -109,7 +109,7 @@ public class Parser {
             assignment(irTree);
         } else if (token.id == ReservedWords.callDefaultId.ordinal()) {
             token = lexer.nextToken();
-            funcCall(irTree);
+            funcCall(irTree, true);
         } else if (token.id == ReservedWords.ifDefaultId.ordinal()) {
             token = lexer.nextToken();
             IfStatement(irTree);
@@ -118,7 +118,7 @@ public class Parser {
             whileStatement(irTree);
         } else if (token.id == ReservedWords.returnDefaultId.ordinal()) {
             token = lexer.nextToken();
-            returnStatement(irTree);
+            irTree.current.returnValue = returnStatement(irTree);
         } else {
             //trhow error
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "let OR call OR if OR while OR return");
@@ -251,79 +251,159 @@ public class Parser {
         }
     }
 
-    private Operand funcCall(IntermediateTree irTree) throws SyntaxException, IOException { //do later
-
+    private Operand funcCall(IntermediateTree irTree, boolean fromStatement) throws SyntaxException, IOException {
         if (token.kind == TokenKind.reservedWord) {
-            if (token.id == ReservedWords.InputNumDefaultId.ordinal()) {
-                Operators ops = Operators.read;
-                Instruction readInstr = new Instruction(ops);
-                irTree.current.instructions.add(readInstr);
-                irTree.current.instructionIDs.add(readInstr.IDNum);
-                token = lexer.nextToken();
-                if (token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
-                    token = lexer.nextToken();
-                }
+            return predefinedFuncCall(irTree, fromStatement);
+        }
+        else {
+            return userdefinedFuncCall(irTree, fromStatement);
+        }
+    }
 
-                Operand ret = new Operand(true, -1, readInstr.IDNum, -1);
-                ret.returnVal = readInstr;
-                return ret;
-                //return operand
-            } else if (token.id == ReservedWords.OutputNumDefaultId.ordinal()) {
-                Operators ops = Operators.write;
+    private Operand userdefinedFuncCall(IntermediateTree irTree, boolean fromStatement) throws IOException, SyntaxException {
+        Operand returnValue = null;
+        Function function = functionInfo.get(token.id);
+        if(function == null){
+            error(ErrorInfo.UNDECLARED_FUNCTION_PARSER_ERROR, "");
+        }
+        if(fromStatement && !function.isVoid){
+            error(ErrorInfo.UNEXPECTED_FUNCTION_TYPE_PARSER_ERROR,"void");
+        }
+        if(!fromStatement && function.isVoid){
+            error(ErrorInfo.UNEXPECTED_FUNCTION_TYPE_PARSER_ERROR,"non-void");
+        }
+
+        //need to put instructions to save registers here
+
+        token = lexer.nextToken();
+        IntermediateTree functionIrTree = function.irTree.getCopyIrTree();
+        //functions with formal parameters. Need to modify IrTree of the function with passed arguments
+        if(function.parameters.size()>0){
+            if(token.kind!=TokenKind.reservedSymbol || token.id!=ReservedWords.startingFirstBracketDefaultId.ordinal()){
+                error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "(");
+            }
+
+            token = lexer.nextToken();
+            int position = 1;
+            Map<Integer, Integer> positionArgumentMap = new HashMap<>();
+            positionArgumentMap.put(position, Expression(irTree).returnVal.IDNum);
+            while (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.commaDefaultId.ordinal()) {
                 token = lexer.nextToken();
-                token = lexer.nextToken();
-                Operand writtenNum;
-                if (token.kind == TokenKind.number) {
-                    writtenNum = new Operand(true, token.val, null, -1);
-                    Instruction constantInstruction = new Instruction(Operators.constant, writtenNum, writtenNum);
-                    Instruction duplicate = getDuplicateInstruction(irTree.constants.dominatorTree[Operators.constant.ordinal()], constantInstruction);
-                    if (duplicate != null) {
-                        writtenNum.valGenerator = duplicate.IDNum;
-                        Instruction.instrNum--;
-                    } else {
-                        irTree.constants.instructions.add(constantInstruction);
-                        irTree.constants.instructionIDs.add(constantInstruction.IDNum);
-                        writtenNum = new Operand(true, token.val, constantInstruction.IDNum, -1);
-                        InstructionLinkedList node = new InstructionLinkedList();
-                        node.value = constantInstruction;
-                        node.previous = irTree.constants.dominatorTree[Operators.constant.ordinal()];
-                        irTree.constants.dominatorTree[Operators.constant.ordinal()] = node;
-                    }
-                    Instruction write = new Instruction(ops, writtenNum);
-                    irTree.current.instructions.add(write);
-                    irTree.current.instructionIDs.add(write.IDNum);
-                } else if (token.kind == TokenKind.identity) {
-                    Operand varWrite;
-                    if (!irTree.current.declaredVariables.contains(token.id)) {
-                        error(ErrorInfo.UNDECLARED_VARIABLE_PARSER_ERROR, "");
-                    }
-                    Instruction valueGenerator = irTree.current.valueInstructionMap.get(token.id);
-                    if (valueGenerator == null) {
-                        warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);
-                        valueGenerator = assignZeroInstruction;
-                    }
-                    varWrite = new Operand(false, 0, valueGenerator.IDNum, token.id);
-                    Instruction write = new Instruction(ops, varWrite);
-                    irTree.current.instructions.add(write);
-                    irTree.current.instructionIDs.add(write.IDNum);
+                if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.endingFirstBracketDefaultId.ordinal()) {
+                    break; //if ; was the last optional terminating semicolon before ; stop parsing
                 }
-                token = lexer.nextToken();
-                token = lexer.nextToken();
-            } else if (token.id == ReservedWords.OutputNewLineDefaultId.ordinal()) {
-                Operators ops = Operators.writeNL;
-                Instruction writeNLInstr = new Instruction(ops);
-                irTree.current.instructions.add(writeNLInstr);
-                irTree.current.instructionIDs.add(writeNLInstr.IDNum);
-                token = lexer.nextToken();
-                if (token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
-                    token = lexer.nextToken();
-                }
-            } else {
-                //error
-                error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "predefined function");
+                position++;
+                positionArgumentMap.put(position, Expression(irTree).returnVal.IDNum);
+            }
+            function.replaceParametersWithArguments(positionArgumentMap, function.irTree);
+            if(token.kind!=TokenKind.reservedSymbol || token.id!=ReservedWords.endingFirstBracketDefaultId.ordinal()){
+                error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, ")");
             }
         }
-        return null;
+        //functions with no parameters. Can directly add IrTree of the function to the current block
+
+        functionIrTree.constants.parentBlocks.add(irTree.current);
+        irTree.current.childBlocks.add(functionIrTree.constants);
+        if(!function.isVoid){
+            returnValue = functionIrTree.current.returnValue;
+        }
+        if (token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
+            token = lexer.nextToken();
+            if (token.id != ReservedWords.endingFirstBracketDefaultId.ordinal()){
+                error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, ")");
+            }
+        }
+        //need to put instructions to change register values here
+        //new basic block is created after function call
+        BasicBlock newBlock = new BasicBlock();
+        newBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
+        newBlock.dominatorTree = irTree.current.dominatorTree.clone();
+        newBlock.declaredVariables.addAll(irTree.current.declaredVariables);
+        newBlock.parentBlocks.add(irTree.current);
+        irTree.current.childBlocks.add(newBlock);
+        newBlock.dominatorBlock = irTree.current;
+        irTree.current = newBlock;
+        token = lexer.nextToken();
+        return returnValue;
+    }
+
+    private Operand predefinedFuncCall(IntermediateTree irTree, boolean fromStatement) throws IOException, SyntaxException {
+        Operand returnValue = null;
+        if (token.id == ReservedWords.InputNumDefaultId.ordinal()) {
+            if(fromStatement){
+                error(ErrorInfo.UNEXPECTED_FUNCTION_TYPE_PARSER_ERROR,"void");
+            }
+            Operators ops = Operators.read;
+            Instruction readInstr = new Instruction(ops);
+            irTree.current.instructions.add(readInstr);
+            irTree.current.instructionIDs.add(readInstr.IDNum);
+            token = lexer.nextToken();
+            if (token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
+                token = lexer.nextToken();
+            }
+
+            returnValue = new Operand(true, -1, readInstr.IDNum, -1);
+            returnValue.returnVal = readInstr;
+        }
+        else if (token.id == ReservedWords.OutputNumDefaultId.ordinal()) {
+            if(!fromStatement){
+                error(ErrorInfo.UNEXPECTED_FUNCTION_TYPE_PARSER_ERROR,"non-void");
+            }
+            Operators ops = Operators.write;
+            token = lexer.nextToken();
+            token = lexer.nextToken();
+            Operand writtenNum;
+            if (token.kind == TokenKind.number) {
+                writtenNum = new Operand(true, token.val, null, -1);
+                Instruction constantInstruction = new Instruction(Operators.constant, writtenNum, writtenNum);
+                Instruction duplicate = getDuplicateInstruction(irTree.constants.dominatorTree[Operators.constant.ordinal()], constantInstruction);
+                if (duplicate != null) {
+                    writtenNum.valGenerator = duplicate.IDNum;
+                    Instruction.instrNum--;
+                } else {
+                    irTree.constants.instructions.add(constantInstruction);
+                    irTree.constants.instructionIDs.add(constantInstruction.IDNum);
+                    writtenNum = new Operand(true, token.val, constantInstruction.IDNum, -1);
+                    InstructionLinkedList node = new InstructionLinkedList();
+                    node.value = constantInstruction;
+                    node.previous = irTree.constants.dominatorTree[Operators.constant.ordinal()];
+                    irTree.constants.dominatorTree[Operators.constant.ordinal()] = node;
+                }
+                Instruction write = new Instruction(ops, writtenNum);
+                irTree.current.instructions.add(write);
+                irTree.current.instructionIDs.add(write.IDNum);
+            } else if (token.kind == TokenKind.identity) {
+                Operand varWrite;
+                if (!irTree.current.declaredVariables.contains(token.id)) {
+                    error(ErrorInfo.UNDECLARED_VARIABLE_PARSER_ERROR, "");
+                }
+                Instruction valueGenerator = irTree.current.valueInstructionMap.get(token.id);
+                if (valueGenerator == null) {
+                    warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);
+                    valueGenerator = assignZeroInstruction;
+                }
+                varWrite = new Operand(false, 0, valueGenerator.IDNum, token.id);
+                Instruction write = new Instruction(ops, varWrite);
+                irTree.current.instructions.add(write);
+                irTree.current.instructionIDs.add(write.IDNum);
+            }
+            token = lexer.nextToken();
+            token = lexer.nextToken();
+        }
+        else if (token.id == ReservedWords.OutputNewLineDefaultId.ordinal()) {
+            if(!fromStatement){
+                error(ErrorInfo.UNEXPECTED_FUNCTION_TYPE_PARSER_ERROR,"non-void");
+            }
+            Operators ops = Operators.writeNL;
+            Instruction writeNLInstr = new Instruction(ops);
+            irTree.current.instructions.add(writeNLInstr);
+            irTree.current.instructionIDs.add(writeNLInstr.IDNum);
+            token = lexer.nextToken();
+            if (token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
+                token = lexer.nextToken();
+            }
+        }
+        return returnValue;
     }
 
     private void IfStatement(IntermediateTree irTree) throws SyntaxException, IOException {
@@ -679,6 +759,9 @@ public class Parser {
 
     private void formalParam(Function function) throws SyntaxException, IOException {
         token = lexer.nextToken();
+        if(token.kind==TokenKind.reservedSymbol && token.id==ReservedWords.endingFirstBracketDefaultId.ordinal()){
+            return;
+        }
         if (token.kind != TokenKind.identity) {
             //error
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "identity");
@@ -937,7 +1020,7 @@ public class Parser {
 
         } else if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.callDefaultId.ordinal()) {
             token = lexer.nextToken();
-            result = funcCall(irTree);
+            result = funcCall(irTree, false);
             if (token.id != ReservedWords.semicolonDefaultId.ordinal()) {
                 token = lexer.nextToken();
             }

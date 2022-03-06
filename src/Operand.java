@@ -1,3 +1,5 @@
+import java.util.Map;
+
 public class Operand {
     boolean constant;
     int constVal;

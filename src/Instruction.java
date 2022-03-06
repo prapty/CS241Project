@@ -1,3 +1,5 @@
+import java.util.Map;
+
 public class Instruction {
     Operators operator;
     Operand firstOp;
@@ -53,6 +55,21 @@ public class Instruction {
         }
         IDNum = instrNum;
         instrNum++;
+    }
+
+    public void modifyInstruction(Map<Integer, Instruction> copyMap) {
+        if(this.firstOp!=null && this.firstOp.valGenerator!=null){
+            Instruction newVal = copyMap.get(this.firstOp.valGenerator);
+            if(newVal !=null){
+                this.firstOp.valGenerator=newVal.IDNum;
+            }
+        }
+        if(this.secondOp!=null && this.secondOp.valGenerator!=null){
+            Instruction newVal = copyMap.get(this.secondOp.valGenerator);
+            if(newVal !=null){
+                this.secondOp.valGenerator=newVal.IDNum;
+            }
+        }
     }
 
     public String toString() {

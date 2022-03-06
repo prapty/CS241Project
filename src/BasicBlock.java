@@ -38,6 +38,7 @@ public class BasicBlock {
     BasicBlock dominatorBlock;
     boolean vis;
     boolean visbranch;
+    Operand returnValue;
 
     public BasicBlock() {
         IDNum = instrNum;
@@ -62,36 +63,29 @@ public class BasicBlock {
         arrayMap = new HashMap<>();
     }
 
-    public BasicBlock(BasicBlock block, Map<Integer, BasicBlock> copyMap) {
+    public BasicBlock(BasicBlock block, Map<Integer, BasicBlock> copyMap, Map<Integer, Instruction>copyInstructionMap) {
         instructions = new ArrayList<>();
         for(int i=0; i<block.instructions.size(); i++){
+            //instructions.add(new Instruction(block.instructions.get(i), copyInstructionMap));
             instructions.add(new Instruction(block.instructions.get(i)));
+            copyInstructionMap.put(block.instructions.get(i).IDNum, instructions.get(i));
         }
 
         instructionIDs = new ArrayList<>();
         instructionIDs.addAll(block.instructionIDs);
 
         valueInstructionMap = new HashMap<>();
-        valueInstructionMap.putAll(block.valueInstructionMap);
+        for(int id: block.valueInstructionMap.keySet()){
+            valueInstructionMap.put(id, copyInstructionMap.get(block.valueInstructionMap.get(id).IDNum));
+        }
+
+        if(returnValue!=null){
+            returnValue.valGenerator = copyInstructionMap.get(block.returnValue.valGenerator).IDNum;
+            returnValue.returnVal = copyInstructionMap.get(block.returnValue.valGenerator);
+        }
 
         parentBlocks = new ArrayList<>();
-//        for(int i=0; i<block.parentBlocks.size(); i++){
-//            BasicBlock oldParent = block.parentBlocks.get(i);
-//            BasicBlock newParent = copyMap.get(oldParent.IDNum);
-//            if(newParent == null){
-//                newParent = new BasicBlock(oldParent, copyMap);
-//            }
-//            parentBlocks.add(newParent);
-//        }
         childBlocks = new ArrayList<>();
-//        for(int i=0; i<block.childBlocks.size(); i++){
-//            BasicBlock oldChild = block.childBlocks.get(i);
-//            BasicBlock newChild = copyMap.get(oldChild.IDNum);
-//            if(newChild == null){
-//                newChild = new BasicBlock(oldChild, copyMap);
-//            }
-//            childBlocks.add(newChild);
-//        }
 
         declaredVariables = new ArrayList<>();
         declaredVariables.addAll(block.declaredVariables);
@@ -102,7 +96,6 @@ public class BasicBlock {
         dominatorTree = block.dominatorTree.clone();
         phiIndex = block.phiIndex;
         whileBlock = block.whileBlock;
-        //condBlock = new BasicBlock(block.condBlock, copyMap);
         isCond = block.isCond;
         nested=block.nested;
         dominatorBlock = block.dominatorBlock;
@@ -111,6 +104,12 @@ public class BasicBlock {
         vis = block.vis;
         visbranch = block.visbranch;
         copyMap.put(block.IDNum, this);
+    }
+
+    public void modifyInstructions(Map<Integer, Instruction>copyInstructionMap){
+        for(int i=0; i<instructions.size(); i++){
+            instructions.get(i).modifyInstruction(copyInstructionMap);
+        }
     }
 
     Instruction getLastInstruction() {

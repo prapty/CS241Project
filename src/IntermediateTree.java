@@ -21,14 +21,15 @@ public class IntermediateTree {
     IntermediateTree getCopyIrTree(){
         IntermediateTree copyIrTree = new IntermediateTree(true);
         Map<Integer, BasicBlock> copyBlockMap = new HashMap<>();
+        Map<Integer, Instruction> copyInstructionMap = new HashMap<>();
         ArrayList<BasicBlock> visited = new ArrayList<>();
         LinkedList<BasicBlock> toVisit = new LinkedList<>();
-        copyIrTree.constants = new BasicBlock(constants, copyBlockMap);
+        copyIrTree.constants = new BasicBlock(constants, copyBlockMap, copyInstructionMap);
         toVisit.add(start);
         while (!toVisit.isEmpty()) {
             BasicBlock current = toVisit.poll();
             visited.add(current);
-            BasicBlock copy = new BasicBlock(current, copyBlockMap);
+            BasicBlock copy = new BasicBlock(current, copyBlockMap, copyInstructionMap);
             for (BasicBlock child : current.childBlocks) {
                 if (!visited.contains(child)) {
                     toVisit.add(child);
@@ -56,6 +57,7 @@ public class IntermediateTree {
             BasicBlock current = toVisit.poll();
             visited.add(current);
             copyIrTree.current=copyBlockMap.get(current.IDNum);
+            copyIrTree.current.modifyInstructions(copyInstructionMap);
             if(copyIrTree.start == null){
                 copyIrTree.start = copyIrTree.current;
             }

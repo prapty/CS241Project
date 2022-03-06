@@ -6,16 +6,15 @@ var z;
   let z <- x + y;
   call OutputNum(z);
 };
-void function smallTest();
-var z;
 {
-  let z <- call InputNum();
-  call OutputNum(z);
-};
-{
-	let a <- call InputNum();
+	let a <- call InputNum;
 
 	let b <- a + 1;
+
+	while a + 1 != b
+	do
+		let a <- a + 1;
+	od;
 
 	call OutputNum(a);
 }.
