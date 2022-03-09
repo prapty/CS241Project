@@ -290,10 +290,21 @@ public class Parser {
     private void makeWhilePhiNested(IntermediateTree irTree, BasicBlock condBlock, BasicBlock putInThisCondd, Instruction phi, int id) {
         if (phi.operator == Operators.kill) {
             Operand killOp = new Operand(true, id, null, -1);
-            Instruction killInstr = new Instruction(Operators.kill, killOp); //check duplicates
-            killInstr.arrayID = id;
-            putInThisCondd.instructions.add(killInstr);
-            putInThisCondd.instructionIDs.add(killInstr.IDNum);
+            Instruction killInstr = new Instruction(Operators.kill, killOp);
+            boolean duplicate = false;
+            for (Instruction i : putInThisCondd.instructions) {
+                if (i == killInstr) {
+                    duplicate = true;
+                    break;
+                }
+            }
+            if (!duplicate) {
+                killInstr.arrayID = id;
+                putInThisCondd.instructions.add(killInstr);
+                putInThisCondd.instructionIDs.add(killInstr.IDNum);
+            } else {
+                Instruction.instrNum--;
+            }
         } else {
             Instruction newPhi;
             Instruction valueGenerator = putInThisCondd.valueInstructionMap.get(id);
@@ -323,10 +334,21 @@ public class Parser {
         ArrayIdent arr = condd.arrayMap.get(id);
         if (arr != null) {
             Operand killOp = new Operand(true, id, null, -1);
-            Instruction killInstr = new Instruction(Operators.kill, killOp); //check duplicates
-            killInstr.arrayID = id;
-            condd.instructions.add(killInstr);
-            condd.instructionIDs.add(killInstr.IDNum);
+            Instruction killInstr = new Instruction(Operators.kill, killOp);
+            boolean duplicate = false;
+            for (Instruction i : condd.instructions) {
+                if (i == killInstr) {
+                    duplicate = true;
+                    break;
+                }
+            }
+            if (!duplicate) {
+                killInstr.arrayID = id;
+                condd.instructions.add(killInstr);
+                condd.instructionIDs.add(killInstr.IDNum);
+            } else {
+                Instruction.instrNum--;
+            }
             return killInstr;
         } else {
             Instruction valueGenerator = condd.valueInstructionMap.get(id);
@@ -757,7 +779,9 @@ public class Parser {
 
         if (newBlock.nested == 0) {
             InstructionLinkedList[] newDomTree = commonSubExpressionWhile(irTree, condBlock, newBlock, tempDomTree);
-            newBlock.dominatorTree = newDomTree.clone();
+            if (newDomTree != null) {
+                newBlock.dominatorTree = newDomTree.clone();
+            }
         }
     }
 
@@ -769,24 +793,38 @@ public class Parser {
         visited.add(condBlock);
         BasicBlock current = blocksInWhile.poll();
         while (current != newBlock) {
-            for (int i = current.childBlocks.size(); i >= 0; i--) {
+            for (int i = current.childBlocks.size() - 1; i >= 0; i--) {
                 if (!visited.contains(current.childBlocks.get(i))) {
                     blocksInWhile.addFirst(current.childBlocks.get(i));
                 }
             }
+            List<Instruction> toRemove = new ArrayList<>();
+            List<Integer> toRemoveInt = new ArrayList<>();
             for (Instruction i : current.instructions) {
                 //cases: add, sub, mul, div, constant, neg, adda, load, cmp, read, write, empty, store, phi, branching, kill, addFP
                 // normal double dupl: add, sub, mul, div, adda, store
-                // no dupl needed: cmp, read, write, writeNL, branching, phi
+                // no dupl needed: cmp, read, write, writeNL, branching, phi, store?
                 //single op dupl: neg, kill
-                // special dupl: add FP, load, store
+                // special dupl: add FP, load
 //                if (i.operator== Operators.phi || i.operator == Operators.write || i.operator == Operators.writeNL || i.operator == Operators.read || i.operator == Operators.cmp || i.operator == Operators.kill || i.operator.toString().charAt(0)=='b'){
 
                 if (i.operator == Operators.sub || i.operator == Operators.mul || i.operator == Operators.div || i.operator == Operators.adda || (i.operator == Operators.add && i.firstOp.arraybase == null)) {
                     Instruction duplicate = getDuplicateInstruction(current.dominatorTree[i.operator.ordinal()], i);
                     if (duplicate != null) {
-
-
+                        Operand replaceOp = null;
+                        for (int t : current.valueInstructionMap.keySet()) {
+                            if (current.valueInstructionMap.get(t) == i) {
+                                current.valueInstructionMap.put(t, duplicate);
+                                replaceOp = new Operand(i.firstOp.constant && i.secondOp.constant, -1, duplicate.IDNum, t);
+                                break;
+                            }
+                        }
+                        if (replaceOp == null) {
+                            replaceOp = new Operand(i.firstOp.constant && i.secondOp.constant, -1, duplicate.IDNum, -1);
+                        }
+                        toRemove.add(i);
+                        toRemoveInt.add(Integer.valueOf(i.IDNum));
+                        updateWhileSubExpr(replaceOp, current, i.IDNum);
                     } else {
                         InstructionLinkedList node = new InstructionLinkedList();
                         node.value = i;
@@ -796,8 +834,20 @@ public class Parser {
                 } else if (i.operator == Operators.neg) {
                     Instruction duplicate = getDuplicateInstructionSingleOp(current.dominatorTree[i.operator.ordinal()], i);
                     if (duplicate != null) {
-
-
+                        Operand replaceOp = null;
+                        for (int t : current.valueInstructionMap.keySet()) {
+                            if (current.valueInstructionMap.get(t) == i) {
+                                current.valueInstructionMap.put(t, duplicate);
+                                replaceOp = new Operand(i.firstOp.constant, -1, duplicate.IDNum, t);
+                                break;
+                            }
+                        }
+                        if (replaceOp == null) {
+                            replaceOp = new Operand(i.firstOp.constant, -1, duplicate.IDNum, -1);
+                        }
+                        toRemove.add(i);
+                        toRemoveInt.add(Integer.valueOf(i.IDNum));
+                        updateWhileSubExpr(replaceOp, current, i.IDNum);
                     } else {
                         InstructionLinkedList node = new InstructionLinkedList();
                         node.value = i;
@@ -805,14 +855,46 @@ public class Parser {
                         current.dominatorTree[i.operator.ordinal()] = node;
                     }
                 } else if (i.operator == Operators.add && i.firstOp.arraybase != null) {
-
+                    Instruction duplicate = getDuplicateInstructionFP(current.dominatorTree[i.operator.ordinal()], i);
+                    if (duplicate != null) {
+                        Operand replaceOp = new Operand(false, -1, duplicate.IDNum, -1);
+                        toRemove.add(i);
+                        toRemoveInt.add(Integer.valueOf(i.IDNum));
+                        updateWhileSubExpr(replaceOp, current, i.IDNum);
+                    } else {
+                        InstructionLinkedList node = new InstructionLinkedList();
+                        node.value = i;
+                        node.previous = current.dominatorTree[i.operator.ordinal()];
+                        current.dominatorTree[i.operator.ordinal()] = node;
+                    }
                 } else if (i.operator == Operators.load) {
-
-                } else if (i.operator == Operators.store) {
-
+                    Instruction duplicate = getDuplicateInstructionLoad(current.dominatorTree[i.operator.ordinal()], i);
+                    if (duplicate != null) {
+                        Operand replaceOp = null;
+                        for (int t : current.valueInstructionMap.keySet()) {
+                            if (current.valueInstructionMap.get(t) == i) {
+                                current.valueInstructionMap.put(t, duplicate);
+                                replaceOp = new Operand(false, -1, duplicate.IDNum, t);
+                                break;
+                            }
+                        }
+                        if (replaceOp == null) {
+                            replaceOp = new Operand(false, -1, duplicate.IDNum, -1);
+                        }
+                        toRemove.add(i);
+                        toRemoveInt.add(Integer.valueOf(i.IDNum));
+                        updateWhileSubExpr(replaceOp, current, i.IDNum);
+                    } else {
+                        InstructionLinkedList node = new InstructionLinkedList();
+                        node.value = i;
+                        node.previous = current.dominatorTree[i.operator.ordinal()];
+                        current.dominatorTree[i.operator.ordinal()] = node;
+                    }
                 }
             }
-            for (int i = current.childBlocks.size(); i >= 0; i--) {
+            current.instructions.removeAll(toRemove);
+            current.instructionIDs.removeAll(toRemoveInt);
+            for (int i = current.childBlocks.size() - 1; i >= 0; i--) {
                 if (!visited.contains(current.childBlocks.get(i))) {
                     current.childBlocks.get(i).dominatorTree = current.dominatorTree.clone();
                     visited.add(current.childBlocks.get(i));
@@ -821,6 +903,40 @@ public class Parser {
             current = blocksInWhile.poll();
         }
         return null;
+    }
+
+    private void updateWhileSubExpr(Operand replaceOp, BasicBlock current, int IDNum) {
+        ArrayList<BasicBlock> visited = new ArrayList<>();
+        LinkedList<BasicBlock> toVisit = new LinkedList<>();
+        visited.add(current);
+        //do condd here
+        for (Instruction i : current.instructions) { // change the cmp in original cond block
+            if (i.firstOp != null && i.firstOp.valGenerator == IDNum) {
+                i.firstOp = replaceOp;
+            }
+            if (i.secondOp != null && i.secondOp.valGenerator == IDNum) {
+                i.secondOp = replaceOp;
+            }
+
+        }
+        toVisit.add(current.childBlocks.get(0));
+        while (!toVisit.isEmpty()) {
+            BasicBlock curr = toVisit.poll();
+            visited.add(curr);
+            for (Instruction i : curr.instructions) { // updates in all the nested blocks
+                if (i.firstOp != null && i.firstOp.valGenerator == IDNum) {
+                    i.firstOp = replaceOp;
+                }
+                if (i.secondOp != null && i.secondOp.valGenerator == IDNum) {
+                    i.secondOp = replaceOp;
+                }
+            }
+            for (BasicBlock child : curr.childBlocks) {
+                if (!visited.contains(child)) {
+                    toVisit.add(child);
+                }
+            }
+        }
     }
 
     private Operand returnStatement(IntermediateTree irTree) throws SyntaxException, IOException {
@@ -1143,7 +1259,7 @@ public class Parser {
                 Instruction loadInstr = null;
                 if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingThirdBracketDefaultId.ordinal()) {
                     Operand load = arrayDesignator(irTree, ident);
-                    loadInstr = new Instruction(Operators.load, load); //check dupl
+                    loadInstr = new Instruction(Operators.load, load);
                     loadInstr.arrayID = ident.id;
 
                     result = new Operand(false, -1, loadInstr.IDNum, -1);
@@ -1442,9 +1558,11 @@ public class Parser {
         if (first.constant == second.constant && first.constVal == second.constVal && first.valGenerator == second.valGenerator) {
             return true;
         }
-//        if (first.valGenerator == second.valGenerator){
-//            return true;
-//        }
+        if (first.valGenerator != null) {
+            if (first.valGenerator == second.valGenerator) {
+                return true;
+            }
+        }
         return false;
     }
 
@@ -1475,14 +1593,25 @@ public class Parser {
             ArrayIdent arr = ifParent.arrayMap.get(identity);
             if (arr != null) {
                 Operand killOp = new Operand(true, identity, null, -1);
-                Instruction killInstr = new Instruction(Operators.kill, killOp); //check duplicates
-                killInstr.arrayID = identity;
-                joinBlock.instructions.add(killInstr);
-                joinBlock.instructionIDs.add(killInstr.IDNum);
-                InstructionLinkedList node = new InstructionLinkedList();
-                node.value = killInstr;
-                node.previous = joinBlock.dominatorTree[Operators.load.ordinal()];
-                joinBlock.dominatorTree[Operators.load.ordinal()] = node;
+                Instruction killInstr = new Instruction(Operators.kill, killOp);
+                boolean duplicate = false;
+                for (Instruction i : joinBlock.instructions) {
+                    if (i == killInstr) {
+                        duplicate = true;
+                        break;
+                    }
+                }
+                if (!duplicate) {
+                    killInstr.arrayID = identity;
+                    joinBlock.instructions.add(killInstr);
+                    joinBlock.instructionIDs.add(killInstr.IDNum);
+                    InstructionLinkedList node = new InstructionLinkedList();
+                    node.value = killInstr;
+                    node.previous = joinBlock.dominatorTree[Operators.load.ordinal()];
+                    joinBlock.dominatorTree[Operators.load.ordinal()] = node;
+                } else {
+                    Instruction.instrNum--;
+                }
             } else {
                 Instruction ifValueGenerator = ifParent.valueInstructionMap.get(identity);
                 if (ifValueGenerator == null) {
