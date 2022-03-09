@@ -1,0 +1,13 @@
+main
+var b, c; array[3] a; {
+let b <- 5;
+let a[2] <- 1;
+let c <- a[2];
+if b < 0
+          then
+              let a[2] <- b + 1;
+          else
+              let b <- b * 1;
+      fi;
+let c <- a[2]
+}.

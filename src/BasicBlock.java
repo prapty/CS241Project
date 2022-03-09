@@ -26,7 +26,6 @@ public class BasicBlock {
     int nested; // 1 if simple loop, increase by 1 for each nested while
 
 
-    //    List<ArrayIdent> ArrayIdentifiers;
     HashMap<Integer, ArrayIdent> arrayMap;
 
     boolean makeDuplicate;
