@@ -35,26 +35,18 @@ while2
 while_corner_case
 While_CSE
 While_double_CSE
+while_dont_rewrite_unrelated
+while_int_vars -> to improve: delete phi if firstOp=secondOp
+simple_array_loads
+While_Inside_If
+while_if_while
+while_ifnested3
 
 
 Need to check more details/seems wrong:
 if_while_test_heavy_if
 if_while_test_heavy_if_predef_fn
-
-
-
-
-Fail:
-if_while_test_heavy_while -> need to add empty at start of if and else block, more errors
-simple_array_loads -> can we ask outputnum of array?
-while_dont_rewrite_unrelated -> first write should write (2), not (9). Problem with phi updating
-while_if_while
-While_Inside_If -> problem with second phi in while, but first works?
-while_int_vars -> need to allow expression in OutputNum
-
-
-not tried cause need to fix first:
-while_ifnested3
+if_while_test_heavy_while -> weird constant in if block, need check
 
 
 
