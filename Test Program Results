@@ -1,12 +1,73 @@
 Passed:
-duplicate_assignments.smpl
-If_ComplexExpression.txt
-While_CSE.txt
-if_nested3.smpl
-empty_while.smpl
-if_joinboth.smpl
-simplified_computations.smpl
-empty_if.smpl
-if-phi-uninit.smpl
-empty_while.smpl
-different_bb_common_subexpr.smpl
+arr3D
+arr3D_2
+array_declear -> not possible test, same ident var and array (did not try)
+array_load_after_store
+array_load_after_store_1
+array_load_cc -> not really possible, assign array directly no [][], (can run)
+array_load_while -> same as above (cannot run)
+array_store_after_load_while -> same as above (cannot run)
+complex_nested_if
+different_bb_common_subexpr
+duplicate_assignments
+empty_common_expression_Elimination
+empty_if
+empty_while
+ih-phi-uninit
+If_ComplexExpression
+if_inside_while
+if_joinboth
+if_nested
+if_nested3
+kill_n_phi
+nestedWhile
+product
+sample_if
+sample_nested_if
+sample_nested_if_1
+sample_nested_if_2
+sample_while
+sample_while_with_follow_statement
+simple
+simplified_computations
+while0
+while2
+while_corner_case
+While_CSE
+While_double_CSE
+
+
+Need to check more details/seems wrong:
+if_while_test_heavy_if
+if_while_test_heavy_if_predef_fn
+
+
+
+
+Fail:
+if_while_test_heavy_while -> need to add empty at start of if and else block, more errors
+simple_array_loads -> can we ask outputnum of array?
+while_dont_rewrite_unrelated -> first write should write (2), not (9). Problem with phi updating
+while_if_while
+While_Inside_If -> problem with second phi in while, but first works?
+while_int_vars -> need to allow expression in OutputNum
+
+
+not tried cause need to fix first:
+while_ifnested3
+
+
+
+Functions:
+average
+dom
+func_while
+function
+function_corner_case_ir_nodes
+function_no_args_cse
+function_recursion_test
+function_return_array_as_args
+funky
+mutual
+nested_functions_with_arrays
+var_and_function

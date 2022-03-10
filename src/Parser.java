@@ -556,6 +556,7 @@ public class Parser {
             token = lexer.nextToken();
             if (token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
                 token = lexer.nextToken();
+                token = lexer.nextToken();
             }
         }
         return returnValue;
@@ -924,10 +925,10 @@ public class Parser {
             BasicBlock curr = toVisit.poll();
             visited.add(curr);
             for (Instruction i : curr.instructions) { // updates in all the nested blocks
-                if (i.firstOp != null && i.firstOp.valGenerator == IDNum) {
+                if (i.firstOp != null && i.firstOp.valGenerator != null && i.firstOp.valGenerator == IDNum) {
                     i.firstOp = replaceOp;
                 }
-                if (i.secondOp != null && i.secondOp.valGenerator == IDNum) {
+                if (i.secondOp != null && i.secondOp.valGenerator != null && i.secondOp.valGenerator == IDNum) {
                     i.secondOp = replaceOp;
                 }
             }
@@ -1018,7 +1019,8 @@ public class Parser {
                 Operand constantDim = new Operand(true, token.val, null, -1);
                 Instruction constantDimInstr = new Instruction(Operators.constant, constantDim, constantDim);
                 constantDuplicate(irTree, constantDim, constantDimInstr);
-                dimOps.add(new Operand(true, token.val, constantDimInstr.IDNum, -1));
+                Operand res = new Operand(true, token.val, constantDimInstr.IDNum, -1);
+                dimOps.add(res);
                 token = lexer.nextToken();
                 token = lexer.nextToken();
             }
@@ -1040,6 +1042,7 @@ public class Parser {
             if (array) {
                 ArrayIdent arrayIdent = new ArrayIdent(token);
                 arrayIdent.dimensions = dimensionArray;
+                arrayIdent.opDims = dimOps;
 //                irTree.current.ArrayIdentifiers.add(arrayIdent);
                 irTree.current.arrayMap.put(token.id, arrayIdent);
             }
@@ -1434,7 +1437,7 @@ public class Parser {
                     Instruction.instrNum--;
                 } else {
                     InstructionLinkedList node = new InstructionLinkedList();
-                    node.value = mul;
+                    node.value = add;
                     node.previous = irTree.current.dominatorTree[Operators.add.ordinal()];
                     irTree.current.dominatorTree[Operators.add.ordinal()] = node;
                     irTree.current.instructions.add(add);
@@ -1516,6 +1519,9 @@ public class Parser {
     }
 
     private boolean sameInstructionFP(Instruction first, Instruction second) {
+        if (first.firstOp.arraybase == null) {
+            return false;
+        }
         if (first.firstOp.arraybase.equals(second.firstOp.arraybase) && first.secondOp.arraybase.equals(second.secondOp.arraybase)) {
             return true;
         }
