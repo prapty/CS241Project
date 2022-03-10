@@ -17,7 +17,7 @@ public class BasicBlock {
     Map<Integer, Instruction> valueInstructionMap;
 
     //Array to maintain linked list of basic operation instructions for common subexpression elimination
-    //index: 0-add, 1-sub, 2-mul, 3-div, 4-const, 5-neg, 6-adda, 7-load
+    //index: 0-add, 1-sub, 2-mul, 3-div, 4-const, 5-neg, 6-adda, 7-load, 8
     InstructionLinkedList[] dominatorTree;
     //indicates whether current block is a while block
     boolean whileBlock; //if it is part of a while loop
@@ -25,11 +25,11 @@ public class BasicBlock {
     BasicBlock condBlock; // points to the direct upper cond block. if nested, the condblock points to outer condblock
     int nested; // 1 if simple loop, increase by 1 for each nested while
 
-
     HashMap<Integer, ArrayIdent> arrayMap;
 
     boolean makeDuplicate;
     boolean nestedBlock;
+    boolean functionHead;
     //indicates the index where phi instruction should be added
     int phiIndex;
 
@@ -37,7 +37,7 @@ public class BasicBlock {
     BasicBlock dominatorBlock;
     boolean vis;
     boolean visbranch;
-    Operand returnValue;
+//    Operand returnValue;
 
     public BasicBlock() {
         IDNum = instrNum;
@@ -60,54 +60,6 @@ public class BasicBlock {
         dominatorBlock = null;
 //        ArrayIdentifiers = new ArrayList<>();
         arrayMap = new HashMap<>();
-    }
-
-    public BasicBlock(BasicBlock block, Map<Integer, BasicBlock> copyMap, Map<Integer, Instruction>copyInstructionMap) {
-        instructions = new ArrayList<>();
-        instructionIDs = new ArrayList<>();
-        for(int i=0; i<block.instructions.size(); i++){
-            //instructions.add(new Instruction(block.instructions.get(i), copyInstructionMap));
-            instructions.add(new Instruction(block.instructions.get(i)));
-            instructionIDs.add(instructions.get(i).IDNum);
-            copyInstructionMap.put(block.instructions.get(i).IDNum, instructions.get(i));
-        }
-
-        valueInstructionMap = new HashMap<>();
-        for(int id: block.valueInstructionMap.keySet()){
-            valueInstructionMap.put(id, copyInstructionMap.get(block.valueInstructionMap.get(id).IDNum));
-        }
-
-        if(returnValue!=null){
-            returnValue.valGenerator = copyInstructionMap.get(block.returnValue.valGenerator).IDNum;
-            returnValue.returnVal = copyInstructionMap.get(block.returnValue.valGenerator);
-        }
-
-        parentBlocks = new ArrayList<>();
-        childBlocks = new ArrayList<>();
-
-        declaredVariables = new ArrayList<>();
-        declaredVariables.addAll(block.declaredVariables);
-
-        assignedVariables = new HashSet<>();
-        assignedVariables.addAll(block.assignedVariables);
-
-        dominatorTree = block.dominatorTree.clone();
-        phiIndex = block.phiIndex;
-        whileBlock = block.whileBlock;
-        isCond = block.isCond;
-        nested = block.nested;
-        dominatorBlock = block.dominatorBlock;
-        IDNum = instrNum;
-        instrNum++;
-        vis = block.vis;
-        visbranch = block.visbranch;
-        copyMap.put(block.IDNum, this);
-    }
-
-    public void modifyInstructions(Map<Integer, Instruction>copyInstructionMap){
-        for(int i=0; i<instructions.size(); i++){
-            instructions.get(i).modifyInstruction(copyInstructionMap);
-        }
     }
 
     Instruction getLastInstruction() {

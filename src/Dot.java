@@ -73,6 +73,11 @@ public class Dot {
         branchLines.add(fallThroughLine);
     }
 
+    private void functionCall(BasicBlock basicBlock, BasicBlock fallBlock, ArrayList<String> lines, ArrayList<String> branchLines) {
+        String fallThroughLine = "bb" + basicBlock.IDNum + ":s -> bb" + fallBlock.IDNum + ":n [color=red, label=\"function-call\"];";
+        branchLines.add(fallThroughLine);
+    }
+
     private void branchBRA(Instruction i, BasicBlock basicBlock, ArrayList<String> lines, ArrayList<String> branchLines) {
         Integer branchTo = i.firstOp.valGenerator;
         BasicBlock branchBlock = null;
@@ -113,7 +118,16 @@ public class Dot {
                 branchBRA(i, basicBlock, lines, branchLines);
             } else if (i == basicBlock.getLastInstruction() && i.operator.toString().charAt(0) != 'b') {
                 if (!basicBlock.childBlocks.isEmpty()) {
-                    fallThrough(basicBlock, basicBlock.childBlocks.get(0), lines, branchLines);
+                    for(int j=0; j<basicBlock.childBlocks.size(); j++){
+                        BasicBlock child = basicBlock.childBlocks.get(j);
+                        if(child.functionHead){
+                            functionCall(basicBlock, child, lines, branchLines);
+                        }
+                        else{
+                            fallThrough(basicBlock, child, lines, branchLines);
+                        }
+                    }
+
                 }
             }
             instrline += i.IDNum + ": " + i.toString() + "|";

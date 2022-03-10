@@ -6,9 +6,10 @@ public class Function {
     IntermediateTree irTree;
     Map<Integer, BasicBlock> copyBlockMap;
 
-    public Function(boolean isVoid) {
+    public Function(boolean isVoid, BasicBlock constants) {
         parameters = new ArrayList<>();
-        irTree = new IntermediateTree();
+        irTree = new IntermediateTree(constants);
+        irTree.start.functionHead = true;
         copyBlockMap = new HashMap<>();
         this.isVoid = isVoid;
     }

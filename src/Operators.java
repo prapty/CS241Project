@@ -22,5 +22,11 @@ public enum Operators {
     blt,
     bge,
     bgt,
-    kill
+    kill,
+    push,
+    pop,
+    pushUsedRegisters,
+    popUsedRegisters,
+    jsr,
+    ret
 }

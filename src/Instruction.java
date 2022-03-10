@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class Instruction {
@@ -8,20 +10,17 @@ public class Instruction {
     static int instrNum = 1;
     boolean duplicate;
     int arrayID;
-
-    public Instruction(int id) {
-        this.operator = Operators.empty;
-        firstOp = null;
-        secondOp = null;
-        IDNum = id;
-    }
+    String storeRegister;
+    List<Integer> arguments;
 
     public Instruction(Operators operator, Operand firstOp, Operand secondOp) {
         this.operator = operator;
         this.firstOp = firstOp;
         this.secondOp = secondOp;
+        storeRegister = null;
         IDNum = instrNum;
         instrNum++;
+        arguments = new ArrayList<>();
     }
 
     public Instruction(Operators operator) {
@@ -30,6 +29,7 @@ public class Instruction {
         secondOp = null;
         IDNum = instrNum;
         instrNum++;
+        arguments = new ArrayList<>();
     }
 
     public Instruction(Operators operator, Operand opr) {
@@ -39,6 +39,7 @@ public class Instruction {
         IDNum = instrNum;
         instrNum++;
         arrayID = 0;
+        arguments = new ArrayList<>();
     }
 
     public Instruction(Instruction instruction) {
@@ -57,21 +58,6 @@ public class Instruction {
         }
         IDNum = instrNum;
         instrNum++;
-    }
-
-    public void modifyInstruction(Map<Integer, Instruction> copyMap) {
-        if(this.firstOp!=null && this.firstOp.valGenerator!=null){
-            Instruction newVal = copyMap.get(this.firstOp.valGenerator);
-            if(newVal !=null){
-                this.firstOp.valGenerator=newVal.IDNum;
-            }
-        }
-        if(this.secondOp!=null && this.secondOp.valGenerator!=null){
-            Instruction newVal = copyMap.get(this.secondOp.valGenerator);
-            if(newVal !=null){
-                this.secondOp.valGenerator=newVal.IDNum;
-            }
-        }
     }
 
     public String toString() {
@@ -98,6 +84,16 @@ public class Instruction {
         }
         if (duplicate) {
             ts += ", duplicate";
+        }
+        if(storeRegister!=null){
+            ts += " -- "+storeRegister;
+        }
+        if(arguments.size()>0){
+            ts += " - "+"(" +arguments.get(0)+ ")";
+            for(int i=1; i<arguments.size(); i++){
+                ts += ", ( "+arguments.get(i)+ ")";
+            }
+            ts += " -";
         }
         return ts;
     }

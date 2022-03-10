@@ -1,6 +1,7 @@
 main
 var a;
 {
+    let a <- 1;
     if a < 0 then
     let a <- a+1;
     fi;
