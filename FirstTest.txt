@@ -1,22 +1,18 @@
 main
-var a, b, c;
-function smallTest(x, y);
-var z, v;
-{
-  let z <- call InputNum();
-  call OutputNum(z);
-  if x > y
-  	then
-  		let z <- z + x;
-  		return z;
-  	else
-  	    let z <- call smallTest(z, y);
-  fi;
-};
-{
-	let a <- call InputNum;
-    let b <- a + call smallTest(a, a+1);
+var a,b,c,d,e,g,f, aaaai; array [2][3] x; array [5][6][7] z,kill;
 
-	call OutputNum(a);
-	call OutputNum(b);
+function test1(y,u);
+{
+	let y<-y/2;
+	let u<-y-1;
+    return y + u;
+};
+
+{
+	let c<- call InputNum();
+	let a<- call InputNum();
+    while c < a do
+	    let d<- call test1(a, c);
+	od;
 }.
+

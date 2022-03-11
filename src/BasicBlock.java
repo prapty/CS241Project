@@ -30,6 +30,7 @@ public class BasicBlock {
     boolean makeDuplicate;
     boolean nestedBlock;
     boolean functionHead;
+    boolean retAdded;
     //indicates the index where phi instruction should be added
     int phiIndex;
 
