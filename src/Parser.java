@@ -662,7 +662,9 @@ public class Parser {
             Instruction write = new Instruction(ops, writtenNum);
             irTree.current.instructions.add(write);
             irTree.current.instructionIDs.add(write.IDNum);
-            token = lexer.nextToken();
+            if(token.id!=ReservedWords.semicolonDefaultId.ordinal()){
+                token = lexer.nextToken();
+            }
         } else if (token.id == ReservedWords.OutputNewLineDefaultId.ordinal()) {
             if (!fromStatement) {
                 error(ErrorInfo.UNEXPECTED_FUNCTION_TYPE_PARSER_ERROR, "non-void");
@@ -798,21 +800,25 @@ public class Parser {
             if(!thenBlock.retAdded && !elseBlock.retAdded){
                 createPhiInstructions(joinBlock, irTree);
             }
+            if(joinBlock.parentBlocks.size()>0){
+                irTree.current = joinBlock;
+                if (joinBlock.instructions.isEmpty()) {
+                    Instruction emptyInstr = new Instruction(Operators.empty);
+                    joinBlock.instructions.add(emptyInstr);
+                    joinBlock.instructionIDs.add(emptyInstr.IDNum);
+                }
 
-            irTree.current = joinBlock;
-            if (joinBlock.instructions.isEmpty()) {
-                Instruction emptyInstr = new Instruction(Operators.empty);
-                joinBlock.instructions.add(emptyInstr);
-                joinBlock.instructionIDs.add(emptyInstr.IDNum);
+                // create operand to branch bra instruction
+                Instruction first = joinBlock.instructions.get(0);
+                Operand opp = new Operand(false, 0, first.IDNum, -1);
+                opp.returnVal = first;
+                Instruction bra = new Instruction(Operators.bra, opp);
+                joinBlock.parentBlocks.get(0).instructions.add(bra);
+                joinBlock.parentBlocks.get(0).instructionIDs.add(bra.IDNum);
             }
-
-            // create operand to branch bra instruction
-            Instruction first = joinBlock.instructions.get(0);
-            Operand opp = new Operand(false, 0, first.IDNum, -1);
-            opp.returnVal = first;
-            Instruction bra = new Instruction(Operators.bra, opp);
-            joinBlock.parentBlocks.get(0).instructions.add(bra);
-            joinBlock.parentBlocks.get(0).instructionIDs.add(bra.IDNum);
+            else{
+                parentBlock.retAdded = true;
+            }
         } else {
             //error
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "fi");

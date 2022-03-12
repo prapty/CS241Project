@@ -1,21 +1,36 @@
 main
-var a, b, c;
-function smallTest(x, y);
-var z, v;
+var rua1, rua3;
+function test1(b);
 {
-  let z <- call InputNum();
-  call OutputNum(z);
-  while x > y do
-    let z <- x + y;
-    return z;
-  od;
-  call OutputNum(z);
-  return z;
+    if b > 0 then
+        return call InputNum;
+    else
+        return 0 - call InputNum;
+    fi;
+};
+
+function test2(b);
+var rua2;
+{
+    if b > 0 then
+        return call InputNum;
+    else
+        return 0 - call InputNum;
+    fi;
+};
+void function test3(b);
+{
+    call OutputNum(b);
+};
+void function test4(a,b,c,d);
+{
+    let a <- b + c + d;
+    call OutputNum(a);
 };
 {
-	let a <- call InputNum;
-    let b <- a + call smallTest(a, a+1);
-
-	call OutputNum(a);
-	call OutputNum(b);
+    let rua1 <- 3;
+    call OutputNum(rua1);
+    call OutputNum(call test2(1));
+    call OutputNum(call test1(0));
+    call test3(rua1);
 }.
