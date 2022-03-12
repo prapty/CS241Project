@@ -8,7 +8,7 @@ public class Instruction {
     Operand secondOp;
     int IDNum;
     static int instrNum = 1;
-    boolean duplicate;
+    boolean noDuplicateCheck;
     int arrayID;
     String storeRegister;
     List<Integer> arguments;
@@ -81,9 +81,6 @@ public class Instruction {
             } else {
                 ts += "#" + secondOp.constVal;
             }
-        }
-        if (duplicate) {
-            ts += ", duplicate";
         }
         if(storeRegister!=null){
             ts += " -- "+storeRegister;

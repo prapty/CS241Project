@@ -1,18 +1,21 @@
 main
-var a,b,c,d,e,g,f, aaaai; array [2][3] x; array [5][6][7] z,kill;
-
-function test1(y,u);
+var a, b, c;
+function smallTest(x, y);
+var z, v;
 {
-	let y<-y/2;
-	let u<-y-1;
-    return y + u;
+  let z <- call InputNum();
+  call OutputNum(z);
+  while x > y do
+    let z <- x + y;
+    return z;
+  od;
+  call OutputNum(z);
+  return z;
 };
-
 {
-	let c<- call InputNum();
-	let a<- call InputNum();
-    while c < a do
-	    let d<- call test1(a, c);
-	od;
-}.
+	let a <- call InputNum;
+    let b <- a + call smallTest(a, a+1);
 
+	call OutputNum(a);
+	call OutputNum(b);
+}.

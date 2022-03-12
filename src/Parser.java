@@ -181,6 +181,7 @@ public class Parser {
         Instruction fourOpInstr = new Instruction(Operators.constant, fourOp, fourOp);
         fourOp = constantDuplicate(irTree, fourOp, fourOpInstr);
         Instruction subSPInstruction = new Instruction(Operators.sub, spOp, fourOp);
+        subSPInstruction.noDuplicateCheck = true;
         subSPInstruction.storeRegister = Registers.SP.name();
         irTree.current.instructions.add(subSPInstruction);
         irTree.current.instructionIDs.add(subSPInstruction.IDNum);
@@ -204,7 +205,6 @@ public class Parser {
         irTree.current.instructions.add(popInstruction);
         irTree.current.instructionIDs.add(popInstruction.IDNum);
 
-
         //create instruction for constant 4
         Operand spOp=new Operand(Registers.SP.name());
         Operand fourOp = new Operand(true, 4, null, -1);
@@ -212,6 +212,7 @@ public class Parser {
         fourOp = constantDuplicate(irTree, fourOp, fourOpInstr);
         //increase SP by 4, store value in SP
         Instruction addSPInstruction = new Instruction(Operators.add, spOp, fourOp);
+        addSPInstruction.noDuplicateCheck = true;
         addSPInstruction.storeRegister = Registers.SP.name();
         irTree.current.instructions.add(addSPInstruction);
         irTree.current.instructionIDs.add(addSPInstruction.IDNum);
@@ -241,6 +242,7 @@ public class Parser {
         Instruction zeroOpInstr = new Instruction(Operators.constant, zeroOp, zeroOp);
         zeroOp = constantDuplicate(irTree, zeroOp, zeroOpInstr);
         Instruction assignFPInstruction = new Instruction(Operators.add, spOp, zeroOp);
+        assignFPInstruction.noDuplicateCheck = true;
         assignFPInstruction.storeRegister = Registers.FP.name();
         irTree.current.instructions.add(assignFPInstruction);
         irTree.current.instructionIDs.add(assignFPInstruction.IDNum);
@@ -499,7 +501,7 @@ public class Parser {
                 }
             }
             for (BasicBlock child : current.childBlocks) {
-                if (!visited.contains(child)) {
+                if (!visited.contains(child)&&!child.functionHead) {
                     toVisit.add(child);
                 }
             }
@@ -613,6 +615,11 @@ public class Parser {
         newBlock.parentBlocks.add(irTree.current);
         irTree.current.childBlocks.add(newBlock);
         newBlock.dominatorBlock = irTree.current;
+        newBlock.whileBlock = irTree.current.whileBlock;
+        newBlock.isCond = false;
+        newBlock.nested = irTree.current.nested;
+        newBlock.condBlock = irTree.current.condBlock;
+
         irTree.current = newBlock;
         //pop returned value
         if (!function.isVoid) {
@@ -1029,7 +1036,7 @@ public class Parser {
             current.instructions.removeAll(toRemove);
             current.instructionIDs.removeAll(toRemoveInt);
             for (int i = current.childBlocks.size() - 1; i >= 0; i--) {
-                if (!visited.contains(current.childBlocks.get(i))) {
+                if (!visited.contains(current.childBlocks.get(i))&&!current.childBlocks.get(i).functionHead) {
                     current.childBlocks.get(i).dominatorTree = current.dominatorTree.clone();
                     visited.add(current.childBlocks.get(i));
                 }
@@ -1053,7 +1060,11 @@ public class Parser {
             }
 
         }
-        toVisit.add(current.childBlocks.get(0));
+        for (BasicBlock child : current.childBlocks) {
+            if (!visited.contains(child)&&!child.functionHead) {
+                toVisit.add(child);
+            }
+        }
         while (!toVisit.isEmpty()) {
             BasicBlock curr = toVisit.poll();
             visited.add(curr);
@@ -1066,7 +1077,7 @@ public class Parser {
                 }
             }
             for (BasicBlock child : curr.childBlocks) {
-                if (!visited.contains(child)) {
+                if (!visited.contains(child)&&!child.functionHead) {
                     toVisit.add(child);
                 }
             }
@@ -1089,6 +1100,7 @@ public class Parser {
         Instruction zeroOpInstr = new Instruction(Operators.constant, zeroOp, zeroOp);
         zeroOp = constantDuplicate(irTree, zeroOp, zeroOpInstr);
         Instruction assignSPInstruction = new Instruction(Operators.add, fpOp, zeroOp);
+        assignSPInstruction.noDuplicateCheck = true;
         assignSPInstruction.storeRegister = Registers.SP.name();
         irTree.current.instructions.add(assignSPInstruction);
         irTree.current.instructionIDs.add(assignSPInstruction.IDNum);
@@ -1664,6 +1676,9 @@ public class Parser {
     }
 
     private Instruction getDuplicateInstructionFP(InstructionLinkedList list, Instruction base) {
+        if(base.noDuplicateCheck){
+            return null;
+        }
         InstructionLinkedList tail = list;
         while (tail != null) {
             if (sameInstructionFP(tail.value, base)) {
@@ -1715,6 +1730,9 @@ public class Parser {
     }
 
     private Instruction getDuplicateInstruction(InstructionLinkedList list, Instruction instruction) {
+        if(instruction.noDuplicateCheck){
+            return null;
+        }
         InstructionLinkedList tail = list;
         while (tail != null) {
             if (sameInstruction(tail.value, instruction)) {
