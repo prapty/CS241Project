@@ -85,7 +85,7 @@ public class Instruction {
         if(storeRegister!=null){
             ts += " -- "+storeRegister;
         }
-        if(arguments.size()>0){
+        if(arguments!=null && arguments.size()>0){
             ts += " - "+"(" +arguments.get(0)+ ")";
             for(int i=1; i<arguments.size(); i++){
                 ts += ", ( "+arguments.get(i)+ ")";

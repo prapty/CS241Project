@@ -41,7 +41,22 @@ simple_array_loads
 While_Inside_If
 while_if_while
 while_ifnested3
-
+function
+var_and_function
+dom
+function_corner_case_ir_nodes
+func_while
+function_no_args_cse
+function_recursion_test
+function_return_array_as_args
+mutual
+nested_functions_with_arrays
+nested_expression.smpl
+dead_code_elimination.smpl
+copy_propagation.smpl
+function_assignment.smpl
+bubble_sort.smpl
+average
 
 Need to check more details/seems wrong:
 if_while_test_heavy_if
@@ -49,17 +64,8 @@ if_while_test_heavy_if_predef_fn
 if_while_test_heavy_while -> weird constant in if block, need check
 
 
-
 Functions:
-average
-dom
-func_while
-function
-function_corner_case_ir_nodes
-function_no_args_cse
-function_recursion_test
-function_return_array_as_args
+
 funky
-mutual
-nested_functions_with_arrays
-var_and_function
+
+

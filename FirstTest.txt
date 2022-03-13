@@ -1,36 +1,28 @@
 main
-var rua1, rua3;
-function test1(b);
-{
-    if b > 0 then
-        return call InputNum;
-    else
-        return 0 - call InputNum;
-    fi;
-};
+var avg;
+function GetAvg(n, min, max); var sum, i, invalid, input; {
+	if min > max then return 0-1 fi;
+	if min < 0 then return 0-1 fi;
+	let sum <- 0;
+	let i <- sum;
+	while i < n do
+		let i <- i + 1;
+		let input <- call InputNum;
+		let invalid <- call IsBetween(min, max, input);
+		if invalid < 0 then return invalid fi;
+		let sum <- sum + input;
+	od;
 
-function test2(b);
-var rua2;
-{
-    if b > 0 then
-        return call InputNum;
-    else
-        return 0 - call InputNum;
-    fi;
+	return sum / n;
 };
-void function test3(b);
-{
-    call OutputNum(b);
-};
-void function test4(a,b,c,d);
-{
-    let a <- b + c + d;
-    call OutputNum(a);
+function IsBetween(min, max, i); {
+	if i < min then return 0-2 fi;
+	if i > max then return 0-3 else return 0 fi;
 };
 {
-    let rua1 <- 3;
-    call OutputNum(rua1);
-    call OutputNum(call test2(1));
-    call OutputNum(call test1(0));
-    call test3(rua1);
+	let avg <- call GetAvg(100, 5, 10);
+	call OutputNum(avg);
+
+	let avg <- call GetAvg(avg, 15, 10);
+	call OutputNum(avg);
 }.

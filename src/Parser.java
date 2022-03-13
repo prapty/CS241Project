@@ -58,7 +58,7 @@ public class Parser {
             funcDecl(irTree);
 
             while (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.semicolonDefaultId.ordinal()) {
-                //after ";" , check if next is var decl
+                //after ";" , check if next is func decl
                 token = lexer.nextToken();
                 if (token.kind == TokenKind.reservedWord && (token.id == ReservedWords.voidDefaultId.ordinal() || token.id == ReservedWords.functionDefaultId.ordinal())) {
                     funcDecl(irTree);
@@ -324,6 +324,9 @@ public class Parser {
         if (token.kind != TokenKind.identity) {
             //error
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "identity");
+        }
+        if(!irTree.current.declaredVariables.contains(token.id)){
+            error(ErrorInfo.UNDECLARED_VARIABLE_PARSER_ERROR, "");
         }
         Token left = token; //change when considering arrays
         token = lexer.nextToken();
@@ -610,8 +613,10 @@ public class Parser {
         //new basic block is created after function call
         BasicBlock newBlock = new BasicBlock();
         newBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
+        newBlock.arrayMap.putAll(irTree.current.arrayMap);
         newBlock.dominatorTree = irTree.current.dominatorTree.clone();
         newBlock.declaredVariables.addAll(irTree.current.declaredVariables);
+        newBlock.assignedVariables.addAll(irTree.current.assignedVariables);
         newBlock.parentBlocks.add(irTree.current);
         irTree.current.childBlocks.add(newBlock);
         newBlock.dominatorBlock = irTree.current;
@@ -630,7 +635,9 @@ public class Parser {
         }
         //pop register values
         popRegisterOperation(irTree);
-        token = lexer.nextToken();
+        if(token.id!=ReservedWords.semicolonDefaultId.ordinal()){
+            token = lexer.nextToken();
+        }
         return returnValue;
     }
 
@@ -695,9 +702,9 @@ public class Parser {
         joinBlock.isCond = false;
         joinBlock.nested = parentBlock.nested;
         joinBlock.condBlock = parentBlock.condBlock;
-        if (parentBlock.whileBlock) {
-            thenBlock.makeDuplicate = true;
-        }
+//        if (parentBlock.whileBlock) {
+//            thenBlock.makeDuplicate = true;
+//        }
         joinBlock.dominatorTree = parentBlock.dominatorTree.clone();
         if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.thenDefaultId.ordinal()) {
             token = lexer.nextToken();
@@ -1064,7 +1071,13 @@ public class Parser {
             if (i.secondOp != null && i.secondOp.valGenerator != null && i.secondOp.valGenerator == IDNum) {
                 i.secondOp = replaceOp;
             }
-
+            if(i.arguments!=null && i.arguments.contains(IDNum)){
+                for(int idx = 0; idx<i.arguments.size(); idx++){
+                    if(i.arguments.get(idx)==IDNum){
+                        i.arguments.set(idx, replaceOp.valGenerator);
+                    }
+                }
+            }
         }
         for (BasicBlock child : current.childBlocks) {
             if (!visited.contains(child)&&!child.functionHead) {
@@ -1099,23 +1112,25 @@ public class Parser {
         } else {
             result = Expression(irTree);
         }
-        //move SP to FP
-        //move stack pointer to frame pointer
-        Operand fpOp=new Operand(Registers.FP.name());
-        Operand zeroOp = new Operand(true, 0, null, -1);
-        Instruction zeroOpInstr = new Instruction(Operators.constant, zeroOp, zeroOp);
-        zeroOp = constantDuplicate(irTree, zeroOp, zeroOpInstr);
-        Instruction assignSPInstruction = new Instruction(Operators.add, fpOp, zeroOp);
-        assignSPInstruction.noDuplicateCheck = true;
-        assignSPInstruction.storeRegister = Registers.SP.name();
-        irTree.current.instructions.add(assignSPInstruction);
-        irTree.current.instructionIDs.add(assignSPInstruction.IDNum);
-        //pop previous FP
-        Instruction popFPInstr=popOperation(irTree);
-        popFPInstr.storeRegister = Registers.FP.name();
-        //pop previous return address
-        Instruction popR31Instr=popOperation(irTree);
-        popR31Instr.storeRegister = Registers.R31.name();
+        if(irTree.start.functionHead){
+            //move SP to FP
+            //move stack pointer to frame pointer
+            Operand fpOp=new Operand(Registers.FP.name());
+            Operand zeroOp = new Operand(true, 0, null, -1);
+            Instruction zeroOpInstr = new Instruction(Operators.constant, zeroOp, zeroOp);
+            zeroOp = constantDuplicate(irTree, zeroOp, zeroOpInstr);
+            Instruction assignSPInstruction = new Instruction(Operators.add, fpOp, zeroOp);
+            assignSPInstruction.noDuplicateCheck = true;
+            assignSPInstruction.storeRegister = Registers.SP.name();
+            irTree.current.instructions.add(assignSPInstruction);
+            irTree.current.instructionIDs.add(assignSPInstruction.IDNum);
+            //pop previous FP
+            Instruction popFPInstr=popOperation(irTree);
+            popFPInstr.storeRegister = Registers.FP.name();
+            //pop previous return address
+            Instruction popR31Instr=popOperation(irTree);
+            popR31Instr.storeRegister = Registers.R31.name();
+        }
         // set result in stack
         if(!irTree.isVoid){
             pushOperation(irTree, result);
