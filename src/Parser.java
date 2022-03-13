@@ -107,18 +107,17 @@ public class Parser {
         }
         int identity = token.id;
         Function function = functionInfo.get(identity);
-        if(function!=null){
-            if((isVoid && !function.isVoid)||(!isVoid && function.isVoid)){
+        if (function != null) {
+            if ((isVoid && !function.isVoid) || (!isVoid && function.isVoid)) {
                 error(ErrorInfo.UNEXPECTED_FUNCTION_TYPE_PARSER_ERROR, expectedReturnType);
             }
             undeclared = true;
             expectedParamSize = function.parameters.size();
             function.parameters = new ArrayList<>();
-        }
-        else{
+        } else {
             function = new Function(isVoid, irTree.constants);
         }
-        if(function.irTree.constants.dominatorTree[Operators.constant.ordinal()]==null){
+        if (function.irTree.constants.dominatorTree[Operators.constant.ordinal()] == null) {
             InstructionLinkedList node = new InstructionLinkedList();
             node.previous = null;
             node.value = assignZeroInstruction;
@@ -134,7 +133,7 @@ public class Parser {
         } else {
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "(");
         }
-        if(undeclared && expectedParamSize != function.parameters.size()){
+        if (undeclared && expectedParamSize != function.parameters.size()) {
             error(ErrorInfo.UNEXPECTED_ARGUMENT_NUMBER_PARSER_ERROR, String.valueOf(function.parameters.size()));
         }
         if (token.kind != TokenKind.reservedSymbol || token.id != ReservedWords.endingFirstBracketDefaultId.ordinal()) {
@@ -170,13 +169,13 @@ public class Parser {
         token = lexer.nextToken();
     }
 
-    private void pushOperation(IntermediateTree irTree, Operand pushOp){
+    private void pushOperation(IntermediateTree irTree, Operand pushOp) {
         Instruction pushInstruction = new Instruction(Operators.push, pushOp);
         irTree.current.instructions.add(pushInstruction);
         irTree.current.instructionIDs.add(pushInstruction.IDNum);
         //decrease SP by 4, store value in SP
         //create instruction for constant 4
-        Operand spOp=new Operand(Registers.SP.name());
+        Operand spOp = new Operand(Registers.SP.name());
         Operand fourOp = new Operand(true, 4, null, -1);
         Instruction fourOpInstr = new Instruction(Operators.constant, fourOp, fourOp);
         fourOp = constantDuplicate(irTree, fourOp, fourOpInstr);
@@ -187,26 +186,26 @@ public class Parser {
         irTree.current.instructionIDs.add(subSPInstruction.IDNum);
     }
 
-    private void pushRegisterOperation(IntermediateTree irTree){
+    private void pushRegisterOperation(IntermediateTree irTree) {
         Instruction pushInstruction = new Instruction(Operators.pushUsedRegisters);
         irTree.current.instructions.add(pushInstruction);
         irTree.current.instructionIDs.add(pushInstruction.IDNum);
     }
 
-    private Instruction popRegisterOperation(IntermediateTree irTree){
+    private Instruction popRegisterOperation(IntermediateTree irTree) {
         Instruction popInstruction = new Instruction(Operators.popUsedRegisters);
         irTree.current.instructions.add(popInstruction);
         irTree.current.instructionIDs.add(popInstruction.IDNum);
         return popInstruction;
     }
 
-    private Instruction popOperation(IntermediateTree irTree){
+    private Instruction popOperation(IntermediateTree irTree) {
         Instruction popInstruction = new Instruction(Operators.pop);
         irTree.current.instructions.add(popInstruction);
         irTree.current.instructionIDs.add(popInstruction.IDNum);
 
         //create instruction for constant 4
-        Operand spOp=new Operand(Registers.SP.name());
+        Operand spOp = new Operand(Registers.SP.name());
         Operand fourOp = new Operand(true, 4, null, -1);
         Instruction fourOpInstr = new Instruction(Operators.constant, fourOp, fourOp);
         fourOp = constantDuplicate(irTree, fourOp, fourOpInstr);
@@ -223,21 +222,21 @@ public class Parser {
     private void funcBody(Function function) throws SyntaxException, IOException {
         IntermediateTree irTree = function.irTree;
         //pop arguments from the stack
-        for(int i=function.parameters.size()-1; i>=0; i--){
-            int id=function.parameters.get(i);
+        for (int i = function.parameters.size() - 1; i >= 0; i--) {
+            int id = function.parameters.get(i);
             Instruction popInstruction = popOperation(irTree);
             irTree.current.valueInstructionMap.put(id, popInstruction);
         }
         //push current return address to the stack
-        Operand reg31Op=new Operand(Registers.R31.name());
+        Operand reg31Op = new Operand(Registers.R31.name());
         pushOperation(irTree, reg31Op);
 
         //push current frame pointer to the stack
-        Operand fpOp=new Operand(Registers.FP.name());
+        Operand fpOp = new Operand(Registers.FP.name());
         pushOperation(irTree, fpOp);
 
         //move frame pointer to stack pointer
-        Operand spOp=new Operand(Registers.SP.name());
+        Operand spOp = new Operand(Registers.SP.name());
         Operand zeroOp = new Operand(true, 0, null, -1);
         Instruction zeroOpInstr = new Instruction(Operators.constant, zeroOp, zeroOp);
         zeroOp = constantDuplicate(irTree, zeroOp, zeroOpInstr);
@@ -274,7 +273,7 @@ public class Parser {
             //if no }, error
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "}");
         }
-        if(!irTree.current.retAdded){
+        if (!irTree.current.retAdded) {
             returnStatement(irTree);
         }
     }
@@ -501,7 +500,7 @@ public class Parser {
                 }
             }
             for (BasicBlock child : current.childBlocks) {
-                if (!visited.contains(child)&&!child.functionHead) {
+                if (!visited.contains(child) && !child.functionHead) {
                     toVisit.add(child);
                 }
             }
@@ -521,10 +520,9 @@ public class Parser {
         Function function = functionInfo.get(token.id);
         boolean undeclared = false;
         if (function == null) {
-            if(!irTree.start.functionHead){
+            if (!irTree.start.functionHead) {
                 error(ErrorInfo.UNDECLARED_FUNCTION_PARSER_ERROR, "");
-            }
-            else{
+            } else {
                 undeclared = true;
                 function = new Function(fromStatement, irTree.constants);
                 Instruction emptyInstr = new Instruction(Operators.empty);
@@ -554,16 +552,16 @@ public class Parser {
             passArgs = true;
             token = lexer.nextToken();
         }
-        if(undeclared){
-            if (token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()){
+        if (undeclared) {
+            if (token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
                 token = lexer.nextToken();
-                if(token.id != ReservedWords.endingFirstBracketDefaultId.ordinal()){
+                if (token.id != ReservedWords.endingFirstBracketDefaultId.ordinal()) {
                     passArgs = true;
                 }
             }
         }
-        if(passArgs){
-            Operand argument1= Expression(irTree);
+        if (passArgs) {
+            Operand argument1 = Expression(irTree);
             argumentList.add(argument1.valGenerator);
             //push argument 1 to stack;
             pushOperation(irTree, argument1);
@@ -573,7 +571,7 @@ public class Parser {
                 if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.endingFirstBracketDefaultId.ordinal()) {
                     break; //if ; was the last optional terminating semicolon before ; stop parsing
                 }
-                Operand argument= Expression(irTree);
+                Operand argument = Expression(irTree);
                 argumentList.add(argument.valGenerator);
                 //push argument  to stack;
                 pushOperation(irTree, argument);
@@ -582,10 +580,10 @@ public class Parser {
                 error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, ")");
             }
         }
-        if(undeclared){
+        if (undeclared) {
             function.parameters = argumentList;
         }
-        if(argumentList.size() != function.parameters.size()){
+        if (argumentList.size() != function.parameters.size()) {
             error(ErrorInfo.UNEXPECTED_ARGUMENT_NUMBER_PARSER_ERROR, String.valueOf(function.parameters.size()));
         }
         //insert special call instruction
@@ -662,7 +660,7 @@ public class Parser {
             Instruction write = new Instruction(ops, writtenNum);
             irTree.current.instructions.add(write);
             irTree.current.instructionIDs.add(write.IDNum);
-            if(token.id!=ReservedWords.semicolonDefaultId.ordinal()){
+            if (token.id != ReservedWords.semicolonDefaultId.ordinal()) {
                 token = lexer.nextToken();
             }
         } else if (token.id == ReservedWords.OutputNewLineDefaultId.ordinal()) {
@@ -685,6 +683,7 @@ public class Parser {
     private void IfStatement(IntermediateTree irTree) throws SyntaxException, IOException {
         relation(irTree);
         BasicBlock parentBlock = irTree.current;
+        irTree.current.ifIfBlock = true;
         BasicBlock thenBlock = new BasicBlock();
         thenBlock.whileBlock = parentBlock.whileBlock;
         thenBlock.isCond = false;
@@ -695,6 +694,8 @@ public class Parser {
         joinBlock.isCond = false;
         joinBlock.nested = parentBlock.nested;
         joinBlock.condBlock = parentBlock.condBlock;
+        joinBlock.IDNum = 0;
+        BasicBlock.instrNum--;
         if (parentBlock.whileBlock) {
             thenBlock.makeDuplicate = true;
         }
@@ -713,7 +714,7 @@ public class Parser {
             thenBlock.instructions.add(emptyInstr);
             thenBlock.instructionIDs.add(emptyInstr.IDNum);
             statSequence(irTree);
-            if(!irTree.current.retAdded){
+            if (!irTree.current.retAdded) {
                 joinBlock.parentBlocks.add(irTree.current);
                 irTree.current.childBlocks.add(joinBlock);
                 joinBlock.assignedVariables.addAll(irTree.current.assignedVariables);
@@ -758,7 +759,7 @@ public class Parser {
             parentBlock.childBlocks.add(elseBlock);
             irTree.current = elseBlock;
         }
-        if(!irTree.current.retAdded){
+        if (!irTree.current.retAdded) {
             joinBlock.parentBlocks.add(irTree.current);
             irTree.current.childBlocks.add(joinBlock);
             joinBlock.assignedVariables.addAll(irTree.current.assignedVariables);
@@ -776,6 +777,9 @@ public class Parser {
         elseBlock.nested = parentBlock.nested;
         elseBlock.condBlock = parentBlock.condBlock;
 
+        joinBlock.IDNum = BasicBlock.instrNum;
+        BasicBlock.instrNum++;
+
         Instruction firstInstr = elseBlock.instructions.get(0);
         Operand op = new Operand(false, 0, firstInstr.IDNum, -1);
         op.returnVal = firstInstr;
@@ -788,7 +792,7 @@ public class Parser {
             irTree.current = parentBlock;
             for (int i = 0; i < irTree.current.childBlocks.size(); i++) {
                 BasicBlock block = irTree.current.childBlocks.get(i);
-                if(!block.retAdded){
+                if (!block.retAdded) {
                     //get all variables which were assigned in if block and else block
                     joinBlock.assignedVariables.addAll(block.assignedVariables);
                     joinBlock.declaredVariables.addAll(block.declaredVariables);
@@ -797,10 +801,10 @@ public class Parser {
                 }
             }
             //create phi instructions for changed variables
-            if(!thenBlock.retAdded && !elseBlock.retAdded){
+            if (!thenBlock.retAdded && !elseBlock.retAdded) {
                 createPhiInstructions(joinBlock, irTree);
             }
-            if(joinBlock.parentBlocks.size()>0){
+            if (joinBlock.parentBlocks.size() > 0) {
                 irTree.current = joinBlock;
                 if (joinBlock.instructions.isEmpty()) {
                     Instruction emptyInstr = new Instruction(Operators.empty);
@@ -815,8 +819,7 @@ public class Parser {
                 Instruction bra = new Instruction(Operators.bra, opp);
                 joinBlock.parentBlocks.get(0).instructions.add(bra);
                 joinBlock.parentBlocks.get(0).instructionIDs.add(bra.IDNum);
-            }
-            else{
+            } else {
                 parentBlock.retAdded = true;
             }
         } else {
@@ -1042,7 +1045,7 @@ public class Parser {
             current.instructions.removeAll(toRemove);
             current.instructionIDs.removeAll(toRemoveInt);
             for (int i = current.childBlocks.size() - 1; i >= 0; i--) {
-                if (!visited.contains(current.childBlocks.get(i))&&!current.childBlocks.get(i).functionHead) {
+                if (!visited.contains(current.childBlocks.get(i)) && !current.childBlocks.get(i).functionHead) {
                     current.childBlocks.get(i).dominatorTree = current.dominatorTree.clone();
                     visited.add(current.childBlocks.get(i));
                 }
@@ -1067,7 +1070,7 @@ public class Parser {
 
         }
         for (BasicBlock child : current.childBlocks) {
-            if (!visited.contains(child)&&!child.functionHead) {
+            if (!visited.contains(child) && !child.functionHead) {
                 toVisit.add(child);
             }
         }
@@ -1083,7 +1086,7 @@ public class Parser {
                 }
             }
             for (BasicBlock child : curr.childBlocks) {
-                if (!visited.contains(child)&&!child.functionHead) {
+                if (!visited.contains(child) && !child.functionHead) {
                     toVisit.add(child);
                 }
             }
@@ -1101,7 +1104,7 @@ public class Parser {
         }
         //move SP to FP
         //move stack pointer to frame pointer
-        Operand fpOp=new Operand(Registers.FP.name());
+        Operand fpOp = new Operand(Registers.FP.name());
         Operand zeroOp = new Operand(true, 0, null, -1);
         Instruction zeroOpInstr = new Instruction(Operators.constant, zeroOp, zeroOp);
         zeroOp = constantDuplicate(irTree, zeroOp, zeroOpInstr);
@@ -1111,13 +1114,13 @@ public class Parser {
         irTree.current.instructions.add(assignSPInstruction);
         irTree.current.instructionIDs.add(assignSPInstruction.IDNum);
         //pop previous FP
-        Instruction popFPInstr=popOperation(irTree);
+        Instruction popFPInstr = popOperation(irTree);
         popFPInstr.storeRegister = Registers.FP.name();
         //pop previous return address
-        Instruction popR31Instr=popOperation(irTree);
+        Instruction popR31Instr = popOperation(irTree);
         popR31Instr.storeRegister = Registers.R31.name();
         // set result in stack
-        if(!irTree.isVoid){
+        if (!irTree.isVoid) {
             pushOperation(irTree, result);
         }
         Instruction retInstr = new Instruction(Operators.ret);
@@ -1682,7 +1685,7 @@ public class Parser {
     }
 
     private Instruction getDuplicateInstructionFP(InstructionLinkedList list, Instruction base) {
-        if(base.noDuplicateCheck){
+        if (base.noDuplicateCheck) {
             return null;
         }
         InstructionLinkedList tail = list;
@@ -1701,22 +1704,20 @@ public class Parser {
     private boolean sameInstructionFP(Instruction first, Instruction second) {
         boolean firstEqual = false;
         boolean secondEqual = false;
-        if ((first.firstOp.arraybase == null && second.firstOp.arraybase!=null)||(first.firstOp.arraybase != null && second.firstOp.arraybase==null)) {
+        if ((first.firstOp.arraybase == null && second.firstOp.arraybase != null) || (first.firstOp.arraybase != null && second.firstOp.arraybase == null)) {
             return false;
         }
-        if ((first.secondOp.arraybase == null && second.secondOp.arraybase!=null)||(first.secondOp.arraybase != null && second.secondOp.arraybase==null)) {
+        if ((first.secondOp.arraybase == null && second.secondOp.arraybase != null) || (first.secondOp.arraybase != null && second.secondOp.arraybase == null)) {
             return false;
         }
-        if(first.firstOp.arraybase==null && second.firstOp.arraybase==null){
+        if (first.firstOp.arraybase == null && second.firstOp.arraybase == null) {
             firstEqual = sameOperand(first.firstOp, second.firstOp);
-        }
-        else{
+        } else {
             firstEqual = first.firstOp.arraybase.equals(second.firstOp.arraybase);
         }
-        if(first.secondOp.arraybase==null && second.secondOp.arraybase==null){
+        if (first.secondOp.arraybase == null && second.secondOp.arraybase == null) {
             secondEqual = sameOperand(first.secondOp, second.secondOp);
-        }
-        else{
+        } else {
             secondEqual = first.secondOp.arraybase.equals(second.secondOp.arraybase);
         }
 //        if (first.firstOp.arraybase.equals(second.firstOp.arraybase) && first.secondOp.arraybase.equals(second.secondOp.arraybase)) {
@@ -1736,7 +1737,7 @@ public class Parser {
     }
 
     private Instruction getDuplicateInstruction(InstructionLinkedList list, Instruction instruction) {
-        if(instruction.noDuplicateCheck){
+        if (instruction.noDuplicateCheck) {
             return null;
         }
         InstructionLinkedList tail = list;
