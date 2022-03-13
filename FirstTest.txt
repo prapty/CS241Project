@@ -1,28 +1,23 @@
 main
-var avg;
-function GetAvg(n, min, max); var sum, i, invalid, input; {
-	if min > max then return 0-1 fi;
-	if min < 0 then return 0-1 fi;
-	let sum <- 0;
-	let i <- sum;
-	while i < n do
-		let i <- i + 1;
-		let input <- call InputNum;
-		let invalid <- call IsBetween(min, max, input);
-		if invalid < 0 then return invalid fi;
-		let sum <- sum + input;
-	od;
-
-	return sum / n;
-};
-function IsBetween(min, max, i); {
-	if i < min then return 0-2 fi;
-	if i > max then return 0-3 else return 0 fi;
+var a, b, c, d;
+void function test (x, y);
+var z;
+{
+  let z <- x + y;
+  call OutputNum(z);
 };
 {
-	let avg <- call GetAvg(100, 5, 10);
-	call OutputNum(avg);
+	let a <- call InputNum;
 
-	let avg <- call GetAvg(avg, 15, 10);
-	call OutputNum(avg);
+	let b <- a + 1;
+    call OutputNum(b);
+	while a + 1 != b
+	do
+		let a <- a + 1;
+		let c <- a + 1;
+		let d <- a + 1;
+	od;
+
+	call OutputNum(a);
+	call OutputNum(b);
 }.
