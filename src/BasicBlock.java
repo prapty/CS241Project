@@ -1,10 +1,9 @@
-import javax.swing.*;
 import java.util.*;
 
 public class BasicBlock {
     int IDNum;
     static int instrNum = 1;
-
+    Integer functionIdentity;
     List<Instruction> instructions;
     List<BasicBlock> parentBlocks;
     List<BasicBlock> childBlocks;
@@ -20,23 +19,18 @@ public class BasicBlock {
     //index: 0-add, 1-sub, 2-mul, 3-div, 4-const, 5-neg, 6-adda, 7-load, 8
     InstructionLinkedList[] dominatorTree;
     //indicates whether current block is a while block
-    boolean whileBlock; //if it is part of a while loop
+    boolean isWhileBlock; //if it is part of a while loop
     boolean isCond; // if it is a condblock
     BasicBlock condBlock; // points to the direct upper cond block. if nested, the condblock points to outer condblock
     int nested; // 1 if simple loop, increase by 1 for each nested while
 
-    boolean ifIfBlock;
+    boolean isIfBlock;
     HashMap<Integer, ArrayIdent> arrayMap;
-
-    boolean makeDuplicate;
     boolean nestedBlock;
     boolean functionHead;
     boolean retAdded;
-    //indicates the index where phi instruction should be added
-    int phiIndex;
-
-    //variables for creating dot file, vis/visbranch to not go through same block twice
     BasicBlock dominatorBlock;
+    //variables for creating dot file, vis/visbranch to not go through same block twice
     boolean vis;
     boolean visbranch;
 //    Operand returnValue;
@@ -54,15 +48,14 @@ public class BasicBlock {
         declaredVariables = new ArrayList<>();
         assignedVariables = new HashSet<>();
         dominatorTree = new InstructionLinkedList[9];
-        phiIndex = 0;
-        whileBlock = false;
+        isWhileBlock = false;
         condBlock = null;
         isCond = false;
         nested = 0;
         dominatorBlock = null;
 //        ArrayIdentifiers = new ArrayList<>();
         arrayMap = new HashMap<>();
-        ifIfBlock = false;
+        isIfBlock = false;
     }
 
     Instruction getLastInstruction() {

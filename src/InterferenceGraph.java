@@ -29,7 +29,7 @@ public class InterferenceGraph {
         while (current != irTree.constants) {
             HashSet<Instruction> liveValues = new HashSet<>();
             if (current.childBlocks.size() > 0) {
-                if (current.ifIfBlock) {
+                if (current.isIfBlock) {
                     if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                         liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
                     }

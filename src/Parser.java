@@ -115,7 +115,7 @@ public class Parser {
             expectedParamSize = function.parameters.size();
             function.parameters = new ArrayList<>();
         } else {
-            function = new Function(isVoid, irTree.constants);
+            function = new Function(isVoid, irTree.constants, identity);
         }
         if (function.irTree.constants.dominatorTree[Operators.constant.ordinal()] == null) {
             InstructionLinkedList node = new InstructionLinkedList();
@@ -204,7 +204,7 @@ public class Parser {
         irTree.current.instructions.add(popInstruction);
         irTree.current.instructionIDs.add(popInstruction.IDNum);
 
-        //create instruction for constant 4
+        //create instruction for constant addNum
         Operand spOp = new Operand(Registers.SP.name());
         Operand fourOp = new Operand(true, 4, null, -1);
         Instruction fourOpInstr = new Instruction(Operators.constant, fourOp, fourOp);
@@ -215,12 +215,24 @@ public class Parser {
         addSPInstruction.storeRegister = Registers.SP.name();
         irTree.current.instructions.add(addSPInstruction);
         irTree.current.instructionIDs.add(addSPInstruction.IDNum);
-
         return popInstruction;
     }
 
     private void funcBody(Function function) throws SyntaxException, IOException {
         IntermediateTree irTree = function.irTree;
+        irTree.numParam = function.parameters.size();
+        if (token.kind == TokenKind.reservedWord && (token.id == ReservedWords.varDefaultId.ordinal() || token.id == ReservedWords.arrayDefaultId.ordinal())) {
+            //parse all variables
+            varDecl(irTree);
+
+            while (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.semicolonDefaultId.ordinal()) {
+                //after ";" , check if next is var decl
+                token = lexer.nextToken();
+                if (token.kind == TokenKind.reservedWord && (token.id == ReservedWords.varDefaultId.ordinal() || token.id == ReservedWords.arrayDefaultId.ordinal())) {
+                    varDecl(irTree);
+                }
+            }
+        }
         //pop arguments from the stack
         for (int i = function.parameters.size() - 1; i >= 0; i--) {
             int id = function.parameters.get(i);
@@ -246,21 +258,18 @@ public class Parser {
         irTree.current.instructions.add(assignFPInstruction);
         irTree.current.instructionIDs.add(assignFPInstruction.IDNum);
 
-//        if(token.kind != TokenKind.reservedSymbol || (token.id != ReservedWords.startingCurlyBracketDefaultId.ordinal())){
-//            error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "{");
-//        }
-        //token = lexer.nextToken();
-        if (token.kind == TokenKind.reservedWord && (token.id == ReservedWords.varDefaultId.ordinal() || token.id == ReservedWords.arrayDefaultId.ordinal())) {
-            //parse all variables
-            varDecl(irTree);
-
-            while (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.semicolonDefaultId.ordinal()) {
-                //after ";" , check if next is var decl
-                token = lexer.nextToken();
-                if (token.kind == TokenKind.reservedWord && (token.id == ReservedWords.varDefaultId.ordinal() || token.id == ReservedWords.arrayDefaultId.ordinal())) {
-                    varDecl(irTree);
-                }
-            }
+        //decrease SP by 4*#localvars bytes
+        if(function.parameters!=null && function.parameters.size()>0){
+            int n = irTree.current.declaredVariables.size()-irTree.numParam;
+            int fourN = n * 4;
+            Operand fourNOp = new Operand(true, fourN, null, -1);
+            Instruction fourOpInstr = new Instruction(Operators.constant, fourNOp, fourNOp);
+            fourNOp = constantDuplicate(irTree, fourNOp, fourOpInstr);
+            Instruction subSPInstruction = new Instruction(Operators.sub, spOp, fourNOp);
+            subSPInstruction.noDuplicateCheck = true;
+            subSPInstruction.storeRegister = Registers.SP.name();
+            irTree.current.instructions.add(subSPInstruction);
+            irTree.current.instructionIDs.add(subSPInstruction.IDNum);
         }
         if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingCurlyBracketDefaultId.ordinal()) {
             token = lexer.nextToken();
@@ -345,18 +354,6 @@ public class Parser {
         if (store == null) {
             irTree.current.valueInstructionMap.put(left.id, op.returnVal);
             irTree.current.assignedVariables.add(left.id);
-            if (irTree.current.makeDuplicate) {
-                BasicBlock parent = irTree.current.parentBlocks.get(0);
-                if (parent.declaredVariables.contains(left.id)) {
-                    if (!irTree.current.instructionIDs.contains(op.valGenerator)) {
-                        Instruction newInstruction = new Instruction(op.returnVal);
-                        op.valGenerator = newInstruction.IDNum;
-                        irTree.current.instructions.add(newInstruction);
-                        irTree.current.instructionIDs.add(newInstruction.IDNum);
-                        irTree.current.valueInstructionMap.put(left.id, newInstruction);
-                    }
-                }
-            }
         } else {
             Instruction storeInt = new Instruction(Operators.store, op, store); //store op at store location
             storeInt.arrayID = left.id; //check duplicate
@@ -371,7 +368,7 @@ public class Parser {
         }
 
         //create phi instruction in parent and use that value for assignment
-        if (irTree.current.whileBlock && !irTree.current.isCond) {
+        if (irTree.current.isWhileBlock && !irTree.current.isCond) {
             int i = irTree.current.nested;
             BasicBlock condd = irTree.current.condBlock;
             Instruction phi = makeWhilePhiDirectCond(irTree, irTree.current, condd, op, left.id); // creat or update phi in the direct while condblock
@@ -527,7 +524,7 @@ public class Parser {
                 error(ErrorInfo.UNDECLARED_FUNCTION_PARSER_ERROR, "");
             } else {
                 undeclared = true;
-                function = new Function(fromStatement, irTree.constants);
+                function = new Function(fromStatement, irTree.constants, token.id);
                 Instruction emptyInstr = new Instruction(Operators.empty);
                 function.irTree.start.instructions.add(emptyInstr);
                 function.irTree.start.instructionIDs.add(emptyInstr.IDNum);
@@ -545,6 +542,21 @@ public class Parser {
         IntermediateTree functionIrTree = function.irTree;
         //push all used registers to the stack
         pushRegisterOperation(irTree);
+        //reserve space for return result
+        if(!function.isVoid){
+            //create instruction for constant addNum
+            Operand spOp = new Operand(Registers.SP.name());
+            Operand fourOp = new Operand(true, 4, null, -1);
+            Instruction fourOpInstr = new Instruction(Operators.constant, fourOp, fourOp);
+            fourOp = constantDuplicate(irTree, fourOp, fourOpInstr);
+            //increase SP by 4, store value in SP
+            Instruction subSPInstruction = new Instruction(Operators.sub, spOp, fourOp);
+            subSPInstruction.noDuplicateCheck = true;
+            subSPInstruction.storeRegister = Registers.SP.name();
+            irTree.current.instructions.add(subSPInstruction);
+            irTree.current.instructionIDs.add(subSPInstruction.IDNum);
+        }
+        //reserve space for re
         List<Integer> argumentList = new ArrayList<>();
         boolean passArgs = false;
         //functions with formal parameters. Need to push arguments to the stack
@@ -618,7 +630,7 @@ public class Parser {
         newBlock.parentBlocks.add(irTree.current);
         irTree.current.childBlocks.add(newBlock);
         newBlock.dominatorBlock = irTree.current;
-        newBlock.whileBlock = irTree.current.whileBlock;
+        newBlock.isWhileBlock = irTree.current.isWhileBlock;
         newBlock.isCond = false;
         newBlock.nested = irTree.current.nested;
         newBlock.condBlock = irTree.current.condBlock;
@@ -690,14 +702,14 @@ public class Parser {
     private void IfStatement(IntermediateTree irTree) throws SyntaxException, IOException {
         relation(irTree);
         BasicBlock parentBlock = irTree.current;
-        irTree.current.ifIfBlock = true;
+        irTree.current.isIfBlock = true;
         BasicBlock thenBlock = new BasicBlock();
-        thenBlock.whileBlock = parentBlock.whileBlock;
+        thenBlock.isWhileBlock = parentBlock.isWhileBlock;
         thenBlock.isCond = false;
         thenBlock.nested = parentBlock.nested;
         thenBlock.condBlock = parentBlock.condBlock;
         BasicBlock joinBlock = new BasicBlock();
-        joinBlock.whileBlock = parentBlock.whileBlock;
+        joinBlock.isWhileBlock = parentBlock.isWhileBlock;
         joinBlock.isCond = false;
         joinBlock.nested = parentBlock.nested;
         joinBlock.condBlock = parentBlock.condBlock;
@@ -736,9 +748,6 @@ public class Parser {
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "then");
         }
         BasicBlock elseBlock = new BasicBlock();
-        if (parentBlock.whileBlock) {
-            elseBlock.makeDuplicate = true;
-        }
         elseBlock.dominatorBlock = parentBlock;
         if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.elseDefaultId.ordinal()) {
             token = lexer.nextToken();
@@ -776,7 +785,7 @@ public class Parser {
             elseBlock.instructions.add(emptyInstr);
             elseBlock.instructionIDs.add(emptyInstr.IDNum);
         }
-        elseBlock.whileBlock = parentBlock.whileBlock;
+        elseBlock.isWhileBlock = parentBlock.isWhileBlock;
         elseBlock.isCond = false;
         elseBlock.nested = parentBlock.nested;
         elseBlock.condBlock = parentBlock.condBlock;
@@ -846,7 +855,7 @@ public class Parser {
         irTree.current.childBlocks.add(condBlock);
         irTree.current = condBlock;
 
-        condBlock.whileBlock = condBlock.parentBlocks.get(0).whileBlock;
+        condBlock.isWhileBlock = condBlock.parentBlocks.get(0).isWhileBlock;
         condBlock.nested = condBlock.parentBlocks.get(0).nested + 1;
         condBlock.isCond = true;
         condBlock.condBlock = condBlock.parentBlocks.get(0).condBlock;
@@ -868,7 +877,7 @@ public class Parser {
         whileBlock.declaredVariables.addAll(irTree.current.declaredVariables);
         whileBlock.arrayMap.putAll(irTree.current.arrayMap);
         whileBlock.parentBlocks.add(irTree.current);
-        whileBlock.whileBlock = true;
+        whileBlock.isWhileBlock = true;
         whileBlock.condBlock = condBlock;
         whileBlock.nested = condBlock.nested;
 
@@ -887,8 +896,8 @@ public class Parser {
         }
 
         BasicBlock newBlock = new BasicBlock();
-        if (condBlock.parentBlocks.get(0).whileBlock) {
-            newBlock.whileBlock = true;
+        if (condBlock.parentBlocks.get(0).isWhileBlock) {
+            newBlock.isWhileBlock = true;
             newBlock.nestedBlock = true;
         }
         newBlock.assignedVariables = condBlock.assignedVariables;
@@ -909,7 +918,7 @@ public class Parser {
 
         newBlock.nested = condBlock.nested - 1;
         newBlock.condBlock = condBlock.condBlock;
-        newBlock.whileBlock = condBlock.whileBlock;
+        newBlock.isWhileBlock = condBlock.isWhileBlock;
 
         Instruction firstInstr = newBlock.instructions.get(0);
         Operand ops = new Operand(false, 0, firstInstr.IDNum, -1);
@@ -1308,7 +1317,7 @@ public class Parser {
         Instruction instruction = new Instruction(operator, left, right);
         Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[operator.ordinal()], instruction);
 
-        boolean allowdupl = (irTree.current.isCond || irTree.current.whileBlock) && (!instruction.firstOp.constant || !instruction.secondOp.constant);
+        boolean allowdupl = (irTree.current.isCond || irTree.current.isWhileBlock) && (!instruction.firstOp.constant || !instruction.secondOp.constant);
         if (duplicate != null && !allowdupl) {
             instruction = duplicate;
         } else {
@@ -1363,7 +1372,7 @@ public class Parser {
                 result = new Operand(true, -token.val, negInstr.IDNum, -1);
                 result.returnVal = negInstr;
                 duplicate = getDuplicateInstructionSingleOp(irTree.current.dominatorTree[Operators.neg.ordinal()], negInstr);
-                boolean allowdupl = (irTree.current.isCond || irTree.current.whileBlock) && (!negInstr.firstOp.constant);
+                boolean allowdupl = (irTree.current.isCond || irTree.current.isWhileBlock) && (!negInstr.firstOp.constant);
                 if (duplicate != null && !allowdupl) {
                     result.valGenerator = duplicate.IDNum;
                     result.returnVal = duplicate;
@@ -1391,7 +1400,7 @@ public class Parser {
                 result = new Operand(false, 0, negInstr.IDNum, token.id);
                 result.returnVal = negInstr;
                 Instruction duplicate = getDuplicateInstructionSingleOp(irTree.current.dominatorTree[Operators.neg.ordinal()], negInstr);
-                boolean allowdupl = (irTree.current.isCond || irTree.current.whileBlock) && (!negInstr.firstOp.constant);
+                boolean allowdupl = (irTree.current.isCond || irTree.current.isWhileBlock) && (!negInstr.firstOp.constant);
                 if (duplicate != null && !allowdupl) {
                     result.valGenerator = duplicate.IDNum;
                     result.returnVal = duplicate;
@@ -1412,7 +1421,7 @@ public class Parser {
                 result = new Operand(false, 0, negInstr.IDNum, -1);
                 result.returnVal = negInstr;
                 Instruction duplicate = getDuplicateInstructionSingleOp(irTree.current.dominatorTree[Operators.neg.ordinal()], negInstr);
-                boolean allowdupl = (irTree.current.isCond || irTree.current.whileBlock) && (!negInstr.firstOp.constant);
+                boolean allowdupl = (irTree.current.isCond || irTree.current.isWhileBlock) && (!negInstr.firstOp.constant);
                 if (duplicate != null && !allowdupl) {
                     result.valGenerator = duplicate.IDNum;
                     result.returnVal = duplicate;
@@ -1457,7 +1466,7 @@ public class Parser {
                     result.returnVal = loadInstr;
 //                    irTree.current.instructions.add(loadInstr); //check
                     Instruction duplicate = getDuplicateInstructionLoad(irTree.current.dominatorTree[Operators.load.ordinal()], loadInstr);
-                    boolean allowdupl = (irTree.current.isCond || irTree.current.whileBlock);
+                    boolean allowdupl = (irTree.current.isCond || irTree.current.isWhileBlock);
                     if (duplicate != null && !allowdupl) {
                         result.valGenerator = duplicate.IDNum;
                         result.returnVal = duplicate;
@@ -1574,7 +1583,7 @@ public class Parser {
             ofs = new Operand(false, -1, mul.IDNum, -1);
             ofs.returnVal = mul;
             Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[Operators.mul.ordinal()], mul);
-            boolean allowdupl = (irTree.current.isCond || irTree.current.whileBlock) && (!mul.firstOp.constant || !mul.secondOp.constant);
+            boolean allowdupl = (irTree.current.isCond || irTree.current.isWhileBlock) && (!mul.firstOp.constant || !mul.secondOp.constant);
             if (duplicate != null && !allowdupl) {
                 ofs.valGenerator = duplicate.IDNum;
                 ofs.returnVal = duplicate;
@@ -1594,7 +1603,7 @@ public class Parser {
                 op = new Operand(false, -1, mul.IDNum, -1);
                 op.returnVal = mul;
                 Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[Operators.mul.ordinal()], mul);
-                boolean allowdupl = (irTree.current.isCond || irTree.current.whileBlock) && (!mul.firstOp.constant || !mul.secondOp.constant);
+                boolean allowdupl = (irTree.current.isCond || irTree.current.isWhileBlock) && (!mul.firstOp.constant || !mul.secondOp.constant);
                 if (duplicate != null && !allowdupl) {
                     op.valGenerator = duplicate.IDNum;
                     op.returnVal = duplicate;
@@ -1612,7 +1621,7 @@ public class Parser {
                 op = new Operand(false, -1, add.IDNum, -1);
                 op.returnVal = add;
                 duplicate = getDuplicateInstruction(irTree.current.dominatorTree[Operators.add.ordinal()], add);
-                allowdupl = (irTree.current.isCond || irTree.current.whileBlock) && (!add.firstOp.constant || !add.secondOp.constant);
+                allowdupl = (irTree.current.isCond || irTree.current.isWhileBlock) && (!add.firstOp.constant || !add.secondOp.constant);
                 if (duplicate != null && !allowdupl) {
                     op.valGenerator = duplicate.IDNum;
                     op.returnVal = duplicate;
@@ -1633,7 +1642,7 @@ public class Parser {
             ofs = new Operand(false, -1, offset.IDNum, -1);
             ofs.returnVal = offset;
             Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[Operators.mul.ordinal()], offset);
-            boolean allowdupl = (irTree.current.isCond || irTree.current.whileBlock) && (!offset.firstOp.constant || !offset.secondOp.constant);
+            boolean allowdupl = (irTree.current.isCond || irTree.current.isWhileBlock) && (!offset.firstOp.constant || !offset.secondOp.constant);
             if (duplicate != null && !allowdupl) {
                 ofs.valGenerator = duplicate.IDNum;
                 ofs.returnVal = duplicate;
@@ -1670,7 +1679,7 @@ public class Parser {
         duplicate = getDuplicateInstruction(irTree.current.dominatorTree[Operators.adda.ordinal()], adda);
         ret = new Operand(false, -1, adda.IDNum, -1);
         ret.returnVal = adda;
-        boolean allowdupl = (irTree.current.isCond || irTree.current.whileBlock) && (!adda.firstOp.constant || !adda.secondOp.constant);
+        boolean allowdupl = (irTree.current.isCond || irTree.current.isWhileBlock) && (!adda.firstOp.constant || !adda.secondOp.constant);
         if (duplicate != null && !allowdupl) {
             ret.valGenerator = duplicate.IDNum;
             ret.returnVal = duplicate;
@@ -1845,7 +1854,7 @@ public class Parser {
                 joinBlock.valueInstructionMap.put(identity, phiInstruction);
 
 
-                if (joinBlock.whileBlock && !joinBlock.isCond) {
+                if (joinBlock.isWhileBlock && !joinBlock.isCond) {
                     int i = joinBlock.nested;
                     BasicBlock condd = joinBlock.condBlock;
                     Operand op = new Operand(false, -1, phiInstruction.IDNum, -1);

@@ -6,15 +6,9 @@ public class Main {
         try {
             Parser parser = new Parser(fileName);
             IntermediateTree intermediateTree = parser.getIntermediateRepresentation();
-            //IntermediateTree copyIrTree = intermediateTree.getCopyIrTree();
-
             String outputFileName = "outputCodeDot.dot";
             Dot dot = new Dot(outputFileName);
             dot.makeDotGraph(intermediateTree);
-
-//            String copyOutputFileName = "copyOutputCodeDot.dot";
-//            Dot copyDot = new Dot(copyOutputFileName);
-//            copyDot.makeDotGraph(copyIrTree);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (SyntaxException e) {

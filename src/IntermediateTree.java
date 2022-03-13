@@ -5,6 +5,7 @@ public class IntermediateTree {
     BasicBlock current;
     BasicBlock constants;
     boolean isVoid;
+    int numParam;
 
     public IntermediateTree() {
         constants = new BasicBlock();
