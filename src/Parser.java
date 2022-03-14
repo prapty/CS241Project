@@ -702,18 +702,20 @@ public class Parser {
     private void IfStatement(IntermediateTree irTree) throws SyntaxException, IOException {
         relation(irTree);
         BasicBlock parentBlock = irTree.current;
-        irTree.current.isIfBlock = true;
+        irTree.current.ifDiamond = IfDiamond.ifBlock;
         BasicBlock thenBlock = new BasicBlock();
         thenBlock.isWhileBlock = parentBlock.isWhileBlock;
         thenBlock.isCond = false;
         thenBlock.nested = parentBlock.nested;
         thenBlock.condBlock = parentBlock.condBlock;
+        thenBlock.ifDiamond = IfDiamond.thenBlock;
         BasicBlock joinBlock = new BasicBlock();
         joinBlock.isWhileBlock = parentBlock.isWhileBlock;
         joinBlock.isCond = false;
         joinBlock.nested = parentBlock.nested;
         joinBlock.condBlock = parentBlock.condBlock;
         joinBlock.IDNum = 0;
+        joinBlock.ifDiamond = IfDiamond.joinBlock;
         BasicBlock.instrNum--;
         joinBlock.dominatorTree = parentBlock.dominatorTree.clone();
         if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.thenDefaultId.ordinal()) {
@@ -749,6 +751,7 @@ public class Parser {
         }
         BasicBlock elseBlock = new BasicBlock();
         elseBlock.dominatorBlock = parentBlock;
+        elseBlock.ifDiamond = IfDiamond.elseBlock;
         if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.elseDefaultId.ordinal()) {
             token = lexer.nextToken();
             elseBlock.valueInstructionMap.putAll(parentBlock.valueInstructionMap);

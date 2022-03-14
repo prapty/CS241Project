@@ -24,7 +24,7 @@ public class BasicBlock {
     BasicBlock condBlock; // points to the direct upper cond block. if nested, the condblock points to outer condblock
     int nested; // 1 if simple loop, increase by 1 for each nested while
 
-    boolean isIfBlock;
+    IfDiamond ifDiamond;
     HashMap<Integer, ArrayIdent> arrayMap;
     boolean nestedBlock;
     boolean functionHead;
@@ -48,7 +48,7 @@ public class BasicBlock {
         nested = 0;
         dominatorBlock = null;
         arrayMap = new HashMap<>();
-        isIfBlock = false;
+        ifDiamond = null;
     }
 
     Instruction getLastInstruction() {
