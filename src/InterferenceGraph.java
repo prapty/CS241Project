@@ -6,12 +6,14 @@ public class InterferenceGraph {
     IntermediateTree irTree;
     PriorityQueue<GraphNode>sortedNodes;
     Map<Integer, Instruction>idInstructionMap;
+    List<Operators>noLive;
 
     public InterferenceGraph(IntermediateTree irTree) {
         this.irTree = irTree;
         Comparator<GraphNode>graphNodComparator = new GraphNodeComparator();
         sortedNodes = new PriorityQueue<>(graphNodComparator);
         idInstructionMap = new HashMap<>();
+        noLive = new ArrayList<>(Arrays.asList(Operators.write, Operators.writeNL, Operators.empty, Operators.constant, Operators.store, Operators.end, Operators.bra, Operators.bne, Operators.beq, Operators.ble, Operators.blt, Operators.bge, Operators.bgt, Operators.kill, Operators.cmp, Operators.push, Operators.pushUsedRegisters, Operators.popUsedRegisters, Operators.jsr));
     }
 
     public HashMap<Instruction, GraphNode> getGraph() {
@@ -27,7 +29,7 @@ public class InterferenceGraph {
         HashMap<Integer, HashSet<Instruction>> blockLiveValues = new HashMap<>(); //live values at end of block i, for if functions
         blockLiveValues.put(current.IDNum, new HashSet<>());
 
-        Operators noLive[] = {Operators.write, Operators.writeNL, Operators.empty, Operators.constant, Operators.store, Operators.end, Operators.bra, Operators.bne, Operators.beq, Operators.ble, Operators.blt, Operators.bge, Operators.bgt, Operators.kill, Operators.cmp, Operators.push, Operators.pushUsedRegisters, Operators.popUsedRegisters, Operators.jsr};
+        //Operators noLive[] = {Operators.write, Operators.writeNL, Operators.empty, Operators.constant, Operators.store, Operators.end, Operators.bra, Operators.bne, Operators.beq, Operators.ble, Operators.blt, Operators.bge, Operators.bgt, Operators.kill, Operators.cmp, Operators.push, Operators.pushUsedRegisters, Operators.popUsedRegisters, Operators.jsr};
 
 
         while (current != irTree.constants) {
@@ -52,17 +54,18 @@ public class InterferenceGraph {
             }
             for (int i = current.instructions.size() - 1; i >= 0; i--) {
                 Instruction currInstr = current.instructions.get(i);
+                idInstructionMap.put(currInstr.IDNum, currInstr);
                 liveValues.remove(currInstr);
 
                 boolean live = true;
-                for (Operators op : noLive) {
-                    if (currInstr.operator == op) {
-                        live = false;
-                    }
+                if(noLive.contains(currInstr.operator)){
+                    live = false;
                 }
-                if (live) {
-                    idInstructionMap.put(currInstr.IDNum, currInstr);
-                if (live && (!currInstr.firstOp.constant || !currInstr.secondOp.constant)) {
+                boolean notConstant = true;
+                if((currInstr.firstOp!=null && currInstr.firstOp.constant)||(currInstr.secondOp!=null && currInstr.secondOp.constant)){
+                    notConstant = false;
+                }
+                if (live && notConstant) {
                     for (Instruction j : liveValues) {
                         if(j!=null){
                             createEdge(graph, j, currInstr);
@@ -178,7 +181,7 @@ public class InterferenceGraph {
         String defaultRegister = "R1";
         for(Integer id:idInstructionMap.keySet()){
             Instruction instruction = idInstructionMap.get(id);
-            if(instruction.storeRegister==null){
+            if(!noLive.contains(instruction.operator) && instruction.storeRegister==null){
                 instruction.storeRegister = defaultRegister;
             }
         }
