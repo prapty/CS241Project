@@ -13,6 +13,7 @@ public class Instruction {
     int arrayID;
     String storeRegister;
     List<Integer> arguments;
+    int cost;
 
     public Instruction(Operators operator, Operand firstOp, Operand secondOp) {
         this.operator = operator;
@@ -22,6 +23,7 @@ public class Instruction {
         IDNum = instrNum;
         instrNum++;
         arguments = new ArrayList<>();
+        cost = 0;
     }
 
     public Instruction(Operators operator) {

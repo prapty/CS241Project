@@ -20,7 +20,9 @@ public class InterferenceGraph {
 
         Comparator<BasicBlock> comparator = new BasicBlockComparator();
         PriorityQueue<BasicBlock> toVisit = new PriorityQueue<>(comparator);
+//        LinkedList<BasicBlock> toVisit = new LinkedList<>();
         HashMap<BasicBlock, Integer> visite = new HashMap<>();
+//        toVisit.add(current);
         visite.put(current, 1);
         HashMap<Integer, HashSet<Instruction>> blockLiveValues = new HashMap<>(); //live values at end of block i, for if functions
         blockLiveValues.put(current.IDNum, new HashSet<>());
@@ -50,7 +52,6 @@ public class InterferenceGraph {
             }
             for (int i = current.instructions.size() - 1; i >= 0; i--) {
                 Instruction currInstr = current.instructions.get(i);
-                //instructionSet.add(currInstr);
                 liveValues.remove(currInstr);
 
                 boolean live = true;
@@ -61,6 +62,7 @@ public class InterferenceGraph {
                 }
                 if (live) {
                     idInstructionMap.put(currInstr.IDNum, currInstr);
+                if (live && (!currInstr.firstOp.constant || !currInstr.secondOp.constant)) {
                     for (Instruction j : liveValues) {
                         if(j!=null){
                             createEdge(graph, j, currInstr);
@@ -68,9 +70,19 @@ public class InterferenceGraph {
                     }
                 }
                 if (currInstr.firstOp != null && !currInstr.firstOp.constant && currInstr.firstOp.id != -1 && currInstr.firstOp.valGenerator != null && currInstr.operator.toString().charAt(0) != 'b') {
+                    if (current.isCond) {
+                        currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested - 1);
+                    } else {
+                        currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested);
+                    }
                     liveValues.add(currInstr.firstOp.returnVal);
                 }
                 if (currInstr.secondOp != null && !currInstr.secondOp.constant && currInstr.secondOp.id != -1 && currInstr.secondOp.valGenerator != null && currInstr.operator.toString().charAt(0) != 'b') {
+                    if (current.isCond) {
+                        currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested - 1);
+                    } else {
+                        currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested);
+                    }
                     liveValues.add(currInstr.secondOp.returnVal);
                 }
             }
@@ -84,7 +96,14 @@ public class InterferenceGraph {
             }
             current = toVisit.poll();
         }
+        updateCost(graph);
         return graph;
+    }
+
+    private void updateCost(HashMap<Instruction,GraphNode> graph) {
+        for(GraphNode gn : graph.values()){
+            gn.instruction.cost = gn.instruction.cost/gn.neighbors.size();
+        }
     }
 
     private void createEdge(HashMap<Instruction, GraphNode> graph, Instruction j, Instruction i) {
