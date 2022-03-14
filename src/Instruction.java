@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -42,31 +43,14 @@ public class Instruction {
         arguments = new ArrayList<>();
     }
 
-    public Instruction(Instruction instruction) {
-        this.operator = instruction.operator;
-        if(instruction.firstOp==null){
-            this.firstOp = null;
-        }
-        else{
-            this.firstOp = new Operand(instruction.firstOp);
-        }
-        if(instruction.secondOp==null){
-            this.secondOp = null;
-        }
-        else{
-            this.secondOp = new Operand(instruction.secondOp);
-        }
-        IDNum = instrNum;
-        instrNum++;
-    }
-
     public String toString() {
         String ts = operator.toString();
         if (firstOp != null) {
             if (firstOp.arraybase != null) {
                 ts += " " + firstOp.arraybase + " ";
                 ;
-            } else if (firstOp.valGenerator != null) {
+            }
+            else if (firstOp.valGenerator != null) {
                 ts += "(" + firstOp.valGenerator + ")";
             } else {
                 ts += "#" + firstOp.constVal;
@@ -89,6 +73,69 @@ public class Instruction {
             ts += " - "+"(" +arguments.get(0)+ ")";
             for(int i=1; i<arguments.size(); i++){
                 ts += ", ( "+arguments.get(i)+ ")";
+            }
+            ts += " -";
+        }
+        return ts;
+    }
+
+    public String toString(Map<Integer, Instruction>idInstructionMap) {
+        List<Operators> noChange = new ArrayList<>(Arrays.asList(Operators.bra, Operators.bne, Operators.beq, Operators.ble, Operators.blt, Operators.bge, Operators.bgt, Operators.kill, Operators.jsr));
+
+        String ts = operator.toString();
+        if (firstOp != null) {
+            if (firstOp.arraybase != null) {
+                ts += " " + firstOp.arraybase + " ";
+                ;
+            }
+            else if (firstOp.valGenerator != null) {
+                Instruction valInstr = idInstructionMap.get(firstOp.valGenerator);
+                if(!noChange.contains(operator) && valInstr!=null && valInstr.storeRegister!=null){
+                    ts += " " + valInstr.storeRegister + " ";
+                }
+                else{
+                    ts += "(" + firstOp.valGenerator + ")";
+                }
+            } else {
+                ts += "#" + firstOp.constVal;
+            }
+        }
+        if (secondOp != null) {
+            if (secondOp.arraybase != null) {
+                ts += secondOp.arraybase;
+                ;
+            } else if (secondOp.valGenerator != null) {
+                Instruction valInstr = idInstructionMap.get(secondOp.valGenerator);
+                if(!noChange.contains(operator) && valInstr!=null && valInstr.storeRegister!=null){
+                    ts += valInstr.storeRegister;
+                }
+                else{
+                    ts += "(" + secondOp.valGenerator + ")";
+                }
+            } else {
+                ts += "#" + secondOp.constVal;
+            }
+        }
+        if(storeRegister!=null){
+            ts += " -- "+storeRegister;
+        }
+        if(arguments!=null && arguments.size()>0){
+            Instruction valInstr = idInstructionMap.get(arguments.get(0));
+            if(valInstr!=null && valInstr.storeRegister!=null){
+                ts += " - "+valInstr.storeRegister;
+            }
+            else{
+                ts += " - "+"(" +arguments.get(0)+ ")";
+            }
+            for(int i=1; i<arguments.size(); i++){
+                valInstr = idInstructionMap.get(arguments.get(i));
+                if(valInstr!=null && valInstr.storeRegister!=null){
+                    ts += " - "+valInstr.storeRegister;
+                }
+                else {
+                    ts += ", ( "+arguments.get(i)+ ")";
+                }
+
             }
             ts += " -";
         }

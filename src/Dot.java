@@ -5,27 +5,28 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.Map;
 
 public class Dot {
 
     String outputFile;
+    Map<Integer, Instruction> idInstructionMap;
 
     public Dot(String filename) {
         outputFile = filename;
     }
 
     public void makeDotGraph(IntermediateTree irTree) throws IOException {
-        ArrayList<String> lines = new ArrayList<String>();
+        ArrayList<String> lines = new ArrayList<>();
         ArrayList<String> branchLines = new ArrayList<>();
         lines.add("digraph G {");
-        //updateInstructionID(irTree);
         LinkedList<BasicBlock> blocks = new LinkedList<>();
+        ArrayList<BasicBlock> visited = new ArrayList<>();
         blocks.add(irTree.constants);
-        blocks.get(0).visbranch = true;
+        visited.add(irTree.constants);
         while (!blocks.isEmpty()) {
 
             makeBlockCode(blocks.get(0), lines, branchLines);
-//            for (BasicBlock b : blocks.get(0).dominatorBlocks) {
             if (blocks.get(0).dominatorBlock != null) {
                 BasicBlock bl = blocks.get(0).dominatorBlock;
                 while (bl != null) {
@@ -35,9 +36,9 @@ public class Dot {
                 }
             }
             for (BasicBlock b : blocks.get(0).childBlocks) {
-                if (!b.visbranch) {
+                if (!visited.contains(b)) {
                     blocks.add(b);
-                    b.visbranch = true;
+                    visited.add(b);
                 }
             }
             blocks.poll();
@@ -47,25 +48,6 @@ public class Dot {
 
         Path file = Paths.get(outputFile);
         Files.write(file, lines, StandardCharsets.UTF_8);
-    }
-
-    private void updateInstructionID(IntermediateTree irTree) {
-        LinkedList<BasicBlock> blocks = new LinkedList<>();
-        blocks.add(irTree.constants);
-        blocks.get(0).vis = true;
-        while (!blocks.isEmpty()) {
-            for (Instruction i : blocks.get(0).instructions) {
-                i.IDNum = Instruction.instrNum;
-                Instruction.instrNum++;
-            }
-            for (BasicBlock b : blocks.get(0).childBlocks) {
-                if (!b.vis) {
-                    blocks.add(b);
-                    b.vis = true;
-                }
-            }
-            blocks.poll();
-        }
     }
 
     private void fallThrough(BasicBlock basicBlock, BasicBlock fallBlock, ArrayList<String> lines, ArrayList<String> branchLines) {
@@ -111,7 +93,6 @@ public class Dot {
         lines.add("bb" + basicBlock.IDNum + " [shape=record, label=\"<b>BB" + basicBlock.IDNum + "|");
         String instrline = "{";
         for (Instruction i : basicBlock.instructions) {
-//            i.IDNum = Instruction.instrNum;
             if (i.operator.toString().charAt(0) == 'b' && !i.operator.toString().equals("bra")) {
                 branchSO(i, basicBlock, lines, branchLines);
             } else if (i.operator.toString().equals("bra")) {
@@ -130,8 +111,12 @@ public class Dot {
 
                 }
             }
-            instrline += i.IDNum + ": " + i.toString() + "|";
-//            Instruction.instrNum++;
+            if(idInstructionMap!=null){
+                instrline += i.IDNum + ": " + i.toString(idInstructionMap) + "|";
+            }
+            else{
+                instrline += i.IDNum + ": " + i.toString() + "|";
+            }
         }
 
         instrline = instrline.substring(0, instrline.length() - 1);

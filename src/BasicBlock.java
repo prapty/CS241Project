@@ -30,16 +30,10 @@ public class BasicBlock {
     boolean functionHead;
     boolean retAdded;
     BasicBlock dominatorBlock;
-    //variables for creating dot file, vis/visbranch to not go through same block twice
-    boolean vis;
-    boolean visbranch;
-//    Operand returnValue;
 
     public BasicBlock() {
         IDNum = instrNum;
         instrNum++;
-        vis = false;
-        visbranch = false;
         instructions = new ArrayList<>();
         instructionIDs = new ArrayList<>();
         valueInstructionMap = new HashMap<>();
@@ -53,7 +47,6 @@ public class BasicBlock {
         isCond = false;
         nested = 0;
         dominatorBlock = null;
-//        ArrayIdentifiers = new ArrayList<>();
         arrayMap = new HashMap<>();
         isIfBlock = false;
     }
