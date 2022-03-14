@@ -56,15 +56,25 @@ public class InterferenceGraph {
                         live = false;
                     }
                 }
-                if (live) {
+                if (live && (!currInstr.firstOp.constant || !currInstr.secondOp.constant)) {
                     for (Instruction j : liveValues) {
                         createEdge(graph, j, currInstr);
                     }
                 }
                 if (currInstr.firstOp != null && !currInstr.firstOp.constant && currInstr.firstOp.id != -1 && currInstr.firstOp.valGenerator != null && currInstr.operator.toString().charAt(0) != 'b') {
+                    if (current.isCond) {
+                        currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested - 1);
+                    } else {
+                        currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested);
+                    }
                     liveValues.add(currInstr.firstOp.returnVal);
                 }
                 if (currInstr.secondOp != null && !currInstr.secondOp.constant && currInstr.secondOp.id != -1 && currInstr.secondOp.valGenerator != null && currInstr.operator.toString().charAt(0) != 'b') {
+                    if (current.isCond) {
+                        currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested - 1);
+                    } else {
+                        currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested);
+                    }
                     liveValues.add(currInstr.secondOp.returnVal);
                 }
             }
@@ -78,7 +88,14 @@ public class InterferenceGraph {
             }
             current = toVisit.poll();
         }
+        updateCost(graph);
         return graph;
+    }
+
+    private void updateCost(HashMap<Instruction,GraphNode> graph) {
+        for(GraphNode gn : graph.values()){
+            gn.instruction.cost = gn.instruction.cost/gn.neighbors.size();
+        }
     }
 
     private void createEdge(HashMap<Instruction, GraphNode> graph, Instruction j, Instruction i) {
