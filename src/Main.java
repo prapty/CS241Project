@@ -13,7 +13,7 @@ public class Main {
 
             InterferenceGraph interferenceGraph = new InterferenceGraph(intermediateTree);
             HashMap<Instruction, GraphNode>graph = interferenceGraph.getGraph();
-            interferenceGraph.colorGraph();
+            interferenceGraph.colorGraph(graph);
             String coloredFileName = "coloredCodeDot.dot";
             Dot coloredDot = new Dot(coloredFileName);
             coloredDot.idInstructionMap = interferenceGraph.idInstructionMap;

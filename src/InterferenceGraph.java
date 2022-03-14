@@ -115,7 +115,7 @@ public class InterferenceGraph {
         return true;
     }
 
-    public void colorGraph(){
+    public void colorGraph(HashMap<Instruction, GraphNode>graph){
         int numColor = 1;
         Set<Integer>excludeColorSet = new HashSet<>(Arrays.asList(0, 27, 28, 29, 30, 31));
         Map<String, String>registerNameNumMap = new HashMap<>();
@@ -126,12 +126,21 @@ public class InterferenceGraph {
         String register = "R";
         while(!sortedNodes.isEmpty()){
             GraphNode node = sortedNodes.poll();
+//            if(node.instruction.operator==Operators.phi){
+//                GraphNode cluster = new GraphNode(node.instrID, node.instruction);
+//                cluster.neighbors.addAll(node.neighbors);
+//                cluster.members.add(node);
+//                Instruction firstInstr = idInstructionMap.get(node.instruction.firstOp.valGenerator);
+//                GraphNode firstNode = graph.get(firstInstr);
+//                Instruction secondInstr = idInstructionMap.get(node.instruction.secondOp.valGenerator);
+//                GraphNode secondNode = graph.get(secondInstr);
+//            }
             boolean colored = false;
             if(node.instruction.storeRegister==null){
                 for(int i=1; i<=numColor; i++){
                     if(isColorAvailable(node, i)){
                         colored = true;
-                        node.instruction.storeRegister=register+String.valueOf(i);
+                        node.instruction.storeRegister=register+i;
                         break;
                     }
                 }
@@ -140,7 +149,7 @@ public class InterferenceGraph {
                     while(excludeColorSet.contains(numColor)){
                         numColor++;
                     }
-                    node.instruction.storeRegister=register+String.valueOf(numColor);
+                    node.instruction.storeRegister=register+numColor;
                 }
             }
             else{
@@ -156,7 +165,7 @@ public class InterferenceGraph {
         }
     }
     private boolean isColorAvailable(GraphNode node, int color){
-        String register = "R"+String.valueOf(color);
+        String register = "R"+color;
         for(GraphNode neighbour: node.neighbors){
             if(neighbour.instruction.storeRegister!=null && neighbour.instruction.storeRegister.equals(register)){
                 return false;

@@ -1,14 +1,19 @@
 main
-var a, b;
+var a, b, c, d, e, y;
 {
     let a <- call InputNum();
-    let b <- call InputNum();
-	while a < 10 do
-	    let a <- b +1;
-	    if b > 3 then
-	        let a <- b+1;
-	    fi;
-	od;
+    let b <- a;
+    let c <- b;
+    let d <- b + c;
+    let e <- a + b;
+    let y <- a;
+    if a > 0 then
+        let d <- d + e;
+        let a <- d;
+        else
+        let d <- e;
+    fi;
 	call OutputNum(a);
-	call OutputNum(b);
+	call OutputNum(y);
+	call OutputNum(d);
 }.
