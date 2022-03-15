@@ -4,7 +4,7 @@ import java.util.*;
 public class InterferenceGraph {
 
     IntermediateTree irTree;
-
+    HashMap<Function, InterferenceGraph> functionsInterferenceGraph;
     Map<Integer, Instruction>idInstructionMap;
     Map<Integer, BasicBlock>idBlockMap;
     List<Operators>noLive;
@@ -177,7 +177,7 @@ public class InterferenceGraph {
         while (!f.irTree.start.parentBlocks.contains(current)) {
             HashSet<Instruction> liveValues = new HashSet<>();
             if (current.childBlocks.size() > 0) {
-                if (current.isIfBlock) {
+                if (current.ifDiamond==IfDiamond.ifBlock) {
                     if (visite.get(current.childBlocks.get(0)) == null) {
                         toVisit.add(current.childBlocks.get(0));
                         visite.put(current.childBlocks.get(0),1);
