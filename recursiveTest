@@ -18,6 +18,7 @@ var z, v;
 {
 	let a <- call InputNum;
     let b <- a + call smallTest(a, a+1);
+    let c <- call smallTest(a, b);
 
 	call OutputNum(a);
 	call OutputNum(b);

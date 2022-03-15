@@ -259,8 +259,8 @@ public class Parser {
         irTree.current.instructionIDs.add(assignFPInstruction.IDNum);
 
         //decrease SP by 4*#localvars bytes
-        if(function.parameters!=null && function.parameters.size()>0){
-            int n = irTree.current.declaredVariables.size()-irTree.numParam;
+        if (function.parameters != null && function.parameters.size() > 0) {
+            int n = irTree.current.declaredVariables.size() - irTree.numParam;
             int fourN = n * 4;
             Operand fourNOp = new Operand(true, fourN, null, -1);
             Instruction fourOpInstr = new Instruction(Operators.constant, fourNOp, fourNOp);
@@ -333,7 +333,7 @@ public class Parser {
             //error
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "identity");
         }
-        if(!irTree.current.declaredVariables.contains(token.id)){
+        if (!irTree.current.declaredVariables.contains(token.id)) {
             error(ErrorInfo.UNDECLARED_VARIABLE_PARSER_ERROR, "");
         }
         Token left = token; //change when considering arrays
@@ -481,9 +481,11 @@ public class Parser {
             if (i.operator != Operators.phi) {
                 if (i.firstOp != null && i.firstOp.valGenerator == phi.firstOp.valGenerator && !i.firstOp.constant && i.firstOp.id == phi.firstOp.id) {
                     i.firstOp.valGenerator = phi.IDNum;
+                    i.firstOp.returnVal = phi;
                 }
                 if (i.secondOp != null && i.secondOp.valGenerator == phi.firstOp.valGenerator && !i.secondOp.constant && i.secondOp.id == phi.firstOp.id) {
                     i.secondOp.valGenerator = phi.IDNum;
+                    i.secondOp.returnVal = phi;
                 }
             }
         }
@@ -494,9 +496,11 @@ public class Parser {
             for (Instruction i : current.instructions) { // updates in all the nested blocks
                 if (i.firstOp != null && i.firstOp.valGenerator == phi.firstOp.valGenerator && !i.firstOp.constant && i.firstOp.id == phi.firstOp.id) {
                     i.firstOp.valGenerator = phi.IDNum;
+                    i.firstOp.returnVal = phi;
                 }
                 if (i.secondOp != null && i.secondOp.valGenerator == phi.firstOp.valGenerator && !i.secondOp.constant && i.secondOp.id == phi.firstOp.id) {
                     i.secondOp.valGenerator = phi.IDNum;
+                    i.secondOp.returnVal = phi;
                 }
             }
             for (BasicBlock child : current.childBlocks) {
@@ -543,7 +547,7 @@ public class Parser {
         //push all used registers to the stack
         pushRegisterOperation(irTree);
         //reserve space for return result
-        if(!function.isVoid){
+        if (!function.isVoid) {
             //create instruction for constant addNum
             Operand spOp = new Operand(Registers.SP.name());
             Operand fourOp = new Operand(true, 4, null, -1);
@@ -604,6 +608,7 @@ public class Parser {
         //insert special call instruction
         Operand destination;
         destination = new Operand(false, 0, functionIrTree.start.instructions.get(0).IDNum, -1);
+        destination.returnVal = functionIrTree.start.instructions.get(0);
         Instruction callInstruction = new Instruction(Operators.jsr, destination);
         callInstruction.arguments = argumentList;
         irTree.current.instructions.add(callInstruction);
@@ -612,6 +617,7 @@ public class Parser {
 
         functionIrTree.start.parentBlocks.add(irTree.current);
         irTree.current.childBlocks.add(functionIrTree.start);
+        irTree.headToFunc.put(functionIrTree.start.IDNum, function);
 
         if (token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
             token = lexer.nextToken();
@@ -645,7 +651,7 @@ public class Parser {
         }
         //pop register values
         popRegisterOperation(irTree);
-        if(token.id!=ReservedWords.semicolonDefaultId.ordinal()){
+        if (token.id != ReservedWords.semicolonDefaultId.ordinal()) {
             token = lexer.nextToken();
         }
         return returnValue;
@@ -974,11 +980,13 @@ public class Parser {
                             if (current.valueInstructionMap.get(t) == i) {
                                 current.valueInstructionMap.put(t, duplicate);
                                 replaceOp = new Operand(i.firstOp.constant && i.secondOp.constant, -1, duplicate.IDNum, t);
+                                replaceOp.returnVal = duplicate;
                                 break;
                             }
                         }
                         if (replaceOp == null) {
                             replaceOp = new Operand(i.firstOp.constant && i.secondOp.constant, -1, duplicate.IDNum, -1);
+                            replaceOp.returnVal = duplicate;
                         }
                         toRemove.add(i);
                         toRemoveInt.add(Integer.valueOf(i.IDNum));
@@ -997,11 +1005,13 @@ public class Parser {
                             if (current.valueInstructionMap.get(t) == i) {
                                 current.valueInstructionMap.put(t, duplicate);
                                 replaceOp = new Operand(i.firstOp.constant, -1, duplicate.IDNum, t);
+                                replaceOp.returnVal = duplicate;
                                 break;
                             }
                         }
                         if (replaceOp == null) {
                             replaceOp = new Operand(i.firstOp.constant, -1, duplicate.IDNum, -1);
+                            replaceOp.returnVal = duplicate;
                         }
                         toRemove.add(i);
                         toRemoveInt.add(Integer.valueOf(i.IDNum));
@@ -1016,6 +1026,7 @@ public class Parser {
                     Instruction duplicate = getDuplicateInstructionFP(current.dominatorTree[i.operator.ordinal()], i);
                     if (duplicate != null) {
                         Operand replaceOp = new Operand(false, -1, duplicate.IDNum, -1);
+                        replaceOp.returnVal = duplicate;
                         toRemove.add(i);
                         toRemoveInt.add(Integer.valueOf(i.IDNum));
                         updateWhileSubExpr(replaceOp, current, i.IDNum);
@@ -1033,11 +1044,13 @@ public class Parser {
                             if (current.valueInstructionMap.get(t) == i) {
                                 current.valueInstructionMap.put(t, duplicate);
                                 replaceOp = new Operand(false, -1, duplicate.IDNum, t);
+                                replaceOp.returnVal = duplicate;
                                 break;
                             }
                         }
                         if (replaceOp == null) {
                             replaceOp = new Operand(false, -1, duplicate.IDNum, -1);
+                            replaceOp.returnVal = duplicate;
                         }
                         toRemove.add(i);
                         toRemoveInt.add(Integer.valueOf(i.IDNum));
@@ -1080,9 +1093,9 @@ public class Parser {
             if (i.secondOp != null && i.secondOp.valGenerator != null && i.secondOp.valGenerator == IDNum) {
                 i.secondOp = replaceOp;
             }
-            if(i.arguments!=null && i.arguments.contains(IDNum)){
-                for(int idx = 0; idx<i.arguments.size(); idx++){
-                    if(i.arguments.get(idx)==IDNum){
+            if (i.arguments != null && i.arguments.contains(IDNum)) {
+                for (int idx = 0; idx < i.arguments.size(); idx++) {
+                    if (i.arguments.get(idx) == IDNum) {
                         i.arguments.set(idx, replaceOp.valGenerator);
                     }
                 }
@@ -1121,10 +1134,10 @@ public class Parser {
         } else {
             result = Expression(irTree);
         }
-        if(irTree.start.functionHead){
+        if (irTree.start.functionHead) {
             //move SP to FP
             //move stack pointer to frame pointer
-            Operand fpOp=new Operand(Registers.FP.name());
+            Operand fpOp = new Operand(Registers.FP.name());
             Operand zeroOp = new Operand(true, 0, null, -1);
             Instruction zeroOpInstr = new Instruction(Operators.constant, zeroOp, zeroOp);
             zeroOp = constantDuplicate(irTree, zeroOp, zeroOpInstr);
@@ -1134,10 +1147,10 @@ public class Parser {
             irTree.current.instructions.add(assignSPInstruction);
             irTree.current.instructionIDs.add(assignSPInstruction.IDNum);
             //pop previous FP
-            Instruction popFPInstr=popOperation(irTree);
+            Instruction popFPInstr = popOperation(irTree);
             popFPInstr.storeRegister = Registers.FP.name();
             //pop previous return address
-            Instruction popR31Instr=popOperation(irTree);
+            Instruction popR31Instr = popOperation(irTree);
             popR31Instr.storeRegister = Registers.R31.name();
         }
         // set result in stack
@@ -1221,6 +1234,7 @@ public class Parser {
                 Instruction constantDimInstr = new Instruction(Operators.constant, constantDim, constantDim);
                 constantDuplicate(irTree, constantDim, constantDimInstr);
                 Operand res = new Operand(true, token.val, constantDimInstr.IDNum, -1);
+                res.returnVal = constantDimInstr;
                 dimOps.add(res);
                 token = lexer.nextToken();
                 token = lexer.nextToken();
