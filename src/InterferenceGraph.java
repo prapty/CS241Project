@@ -4,15 +4,13 @@ import java.util.*;
 public class InterferenceGraph {
 
     IntermediateTree irTree;
-    PriorityQueue<GraphNode>sortedNodes;
+
     Map<Integer, Instruction>idInstructionMap;
     Map<Integer, BasicBlock>idBlockMap;
     List<Operators>noLive;
 
     public InterferenceGraph(IntermediateTree irTree) {
         this.irTree = irTree;
-        Comparator<GraphNode>graphNodComparator = new GraphNodeComparator();
-        sortedNodes = new PriorityQueue<>(graphNodComparator);
         idInstructionMap = new HashMap<>();
         idBlockMap = new HashMap<>();
         idBlockMap.put(irTree.constants.IDNum, irTree.constants);
@@ -173,12 +171,10 @@ public class InterferenceGraph {
         if (nodeJ == null) {
             nodeJ = new GraphNode(j.IDNum, j);
             graph.put(j, nodeJ);
-            sortedNodes.add(nodeJ);
         }
         if (nodeI == null) {
             nodeI = new GraphNode(i.IDNum, i);
             graph.put(i, nodeI);
-            sortedNodes.add(nodeI);
         }
         nodeI.neighbors.add(nodeJ);
         nodeJ.neighbors.add(nodeI);
@@ -204,24 +200,9 @@ public class InterferenceGraph {
         registerNameNumMap.put(Registers.RV.name(), "R27");
         registerNameNumMap.put(Registers.R31.name(), "R31");
         String register = "R";
+        PriorityQueue<GraphNode> sortedNodes = buildPriorityQue(graph);
         while(!sortedNodes.isEmpty()){
             GraphNode node = sortedNodes.poll();
-            if(node.instruction.operator==Operators.phi){
-                GraphNode cluster = new GraphNode(node.instrID, node.instruction);
-                cluster.neighbors.addAll(node.neighbors);
-                cluster.members.add(node);
-                //sortedNodes.remove(node);
-                Instruction firstInstr = idInstructionMap.get(node.instruction.firstOp.valGenerator);
-                if(firstInstr!=null){
-                    GraphNode firstNode = graph.get(firstInstr);
-                    if(firstNode!=null){
-
-                    }
-                }
-
-                Instruction secondInstr = idInstructionMap.get(node.instruction.secondOp.valGenerator);
-                GraphNode secondNode = graph.get(secondInstr);
-            }
             boolean colored = false;
             if(node.instruction.storeRegister==null){
                 for(int i=1; i<=numColor; i++){
@@ -236,7 +217,13 @@ public class InterferenceGraph {
                     while(excludeColorSet.contains(numColor)){
                         numColor++;
                     }
-                    node.instruction.storeRegister=register+numColor;
+                    String allocatedRegister = register+numColor;
+                    node.instruction.storeRegister=allocatedRegister;
+                    if(node.members!=null && node.members.size()>0){
+                        for(GraphNode member: node.members){
+                            member.instruction.storeRegister = allocatedRegister;
+                        }
+                    }
                 }
             }
             else{
@@ -250,6 +237,53 @@ public class InterferenceGraph {
                 instruction.storeRegister = defaultRegister;
             }
         }
+    }
+
+    private PriorityQueue<GraphNode> buildPriorityQue(HashMap<Instruction, GraphNode>graph){
+        Comparator<GraphNode>graphNodComparator = new GraphNodeComparator();
+        PriorityQueue<GraphNode>sortedNodes = new PriorityQueue<>(graphNodComparator);
+        for(Instruction instruction: graph.keySet()){
+            if(instruction.operator==Operators.phi){
+                    GraphNode cluster = new GraphNode(instruction.IDNum, instruction);
+                    GraphNode phiNode = graph.get(instruction);
+                    GraphNode leftNode, rightNode;
+                    cluster.neighbors.addAll(phiNode.neighbors);
+                    cluster.members.add(phiNode);
+                    Instruction leftInstr = idInstructionMap.get(instruction.firstOp.valGenerator);
+                    if(leftInstr!=null){
+                        leftNode = graph.get(leftInstr);
+                        if(leftNode!=null){
+                            if(!leftNode.neighbors.contains(phiNode)){
+                                cluster.members.add(leftNode);
+                                cluster.neighbors.addAll(leftNode.neighbors);
+                                sortedNodes.remove(leftNode);
+                            }
+                        }
+                    }
+                Instruction rightInstr = idInstructionMap.get(instruction.secondOp.valGenerator);
+                if(rightInstr!=null){
+                    rightNode = graph.get(rightInstr);
+                    if(rightNode!=null){
+                        boolean interfere = false;
+                        for(GraphNode node: cluster.members){
+                            if(rightNode.neighbors.contains(node)){
+                                interfere = true;
+                            }
+                        }
+                        if(!interfere){
+                            cluster.members.add(rightNode);
+                            cluster.neighbors.addAll(rightNode.neighbors);
+                            sortedNodes.remove(rightNode);
+                        }
+                    }
+                }
+                sortedNodes.add(cluster);
+            }
+            else {
+                sortedNodes.add(graph.get(instruction));
+            }
+        }
+        return sortedNodes;
     }
     private boolean isColorAvailable(GraphNode node, int color){
         String register = "R"+color;
