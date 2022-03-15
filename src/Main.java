@@ -6,6 +6,7 @@ public class Main {
         String fileName = args[0];
         try {
             Parser parser = new Parser(fileName);
+//            Parser parser = new Parser("if_in_while.txt");
             IntermediateTree intermediateTree = parser.getIntermediateRepresentation();
             String outputFileName = "outputCodeDot.dot";
             Dot dot = new Dot(outputFileName);
@@ -14,6 +15,11 @@ public class Main {
             InterferenceGraph interferenceGraph = new InterferenceGraph(intermediateTree);
             HashMap<Instruction, GraphNode>graph = interferenceGraph.getGraph();
             interferenceGraph.colorGraph(graph);
+            for(Function func : interferenceGraph.functionsInterferenceGraph.keySet()){
+                InterferenceGraph ig = interferenceGraph.functionsInterferenceGraph.get(func);
+                HashMap<Instruction, GraphNode> funcGraph = ig.getFunctionGraph(func);
+                ig.colorGraph(funcGraph);
+            }
             String coloredFileName = "coloredCodeDot.dot";
             Dot coloredDot = new Dot(coloredFileName);
             coloredDot.idInstructionMap = interferenceGraph.idInstructionMap;

@@ -4,6 +4,7 @@ public class IntermediateTree {
     BasicBlock start;
     BasicBlock current;
     BasicBlock constants;
+    HashMap<Integer, Function> headToFunc;
     boolean isVoid;
     int numParam;
 
@@ -11,6 +12,7 @@ public class IntermediateTree {
         constants = new BasicBlock();
         current=new BasicBlock();
         start=current;
+        headToFunc = new HashMap<>();
 
         constants.childBlocks.add(start);
         start.parentBlocks.add(constants);
@@ -21,6 +23,7 @@ public class IntermediateTree {
         this.constants = constants;
         current=new BasicBlock();
         start=current;
+        headToFunc = new HashMap<>();
 
 //        this.constants.childBlocks.add(start);
 //        start.parentBlocks.add(this.constants);
