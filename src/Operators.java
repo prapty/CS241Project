@@ -28,5 +28,6 @@ public enum Operators {
     pushUsedRegisters,
     popUsedRegisters,
     jsr,
-    ret
+    ret,
+    move
 }

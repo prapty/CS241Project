@@ -236,7 +236,64 @@ public class InterferenceGraph {
             if(!noLive.contains(instruction.operator) && instruction.storeRegister==null){
                 instruction.storeRegister = defaultRegister;
             }
+            if(instruction.operator==Operators.phi){
+                resolvePhi(instruction);
+            }
         }
+    }
+
+    private void resolvePhi(Instruction instruction){
+        Instruction leftInstr = idInstructionMap.get(instruction.firstOp.valGenerator);
+        Instruction rightInstr = idInstructionMap.get(instruction.secondOp.valGenerator);
+        int phiBlockId = 0;
+        for(int id:idBlockMap.keySet()){
+            BasicBlock block = idBlockMap.get(id);
+            if(block.instructionIDs.contains(instruction.IDNum)){
+                phiBlockId = block.IDNum;
+                break;
+            }
+        }
+
+        BasicBlock phiBlock = idBlockMap.get(phiBlockId);
+
+        if(!instruction.storeRegister.equals(leftInstr.storeRegister)){
+            //need to add move for left
+            Operand leftOp = new Operand(leftInstr.storeRegister);
+            Instruction moveInstr = new Instruction(Operators.move, leftOp);
+            moveInstr.storeRegister = instruction.storeRegister;
+
+            BasicBlock leftBlock = phiBlock.parentBlocks.get(0);
+            int index = leftBlock.instructions.indexOf(leftInstr);
+            if(index!=-1){
+                leftBlock.instructions.add(index+1, moveInstr);
+                leftBlock.instructionIDs.add(index+1, moveInstr.IDNum);
+            }
+            else{
+                leftBlock.instructions.add(moveInstr);
+                leftBlock.instructionIDs.add(moveInstr.IDNum);
+            }
+        }
+
+        if(!instruction.storeRegister.equals(rightInstr.storeRegister)){
+            //need to add move for right
+            Operand rightOp = new Operand(rightInstr.storeRegister);
+            Instruction moveInstr = new Instruction(Operators.move, rightOp);
+            moveInstr.storeRegister = instruction.storeRegister;
+            BasicBlock rightBlock = phiBlock.parentBlocks.get(1);
+            int index = rightBlock.instructions.indexOf(rightInstr);
+            if(index!=-1){
+                rightBlock.instructions.add(index+1, moveInstr);
+                rightBlock.instructionIDs.add(index+1, moveInstr.IDNum);
+            }
+            else {
+                rightBlock.instructions.add(moveInstr);
+                rightBlock.instructionIDs.add(moveInstr.IDNum);
+            }
+        }
+        //remove phi
+        phiBlock.instructions.remove(instruction);
+        int idIndex = phiBlock.instructionIDs.indexOf(instruction.IDNum);
+        phiBlock.instructionIDs.remove(idIndex);
     }
 
     private PriorityQueue<GraphNode> buildPriorityQue(HashMap<Instruction, GraphNode>graph){

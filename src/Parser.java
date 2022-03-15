@@ -716,6 +716,9 @@ public class Parser {
         joinBlock.condBlock = parentBlock.condBlock;
         joinBlock.IDNum = 0;
         joinBlock.ifDiamond = IfDiamond.joinBlock;
+        Instruction empty = new Instruction(Operators.empty);
+        joinBlock.instructions.add(empty);
+        joinBlock.instructionIDs.add(empty.IDNum);
         BasicBlock.instrNum--;
         joinBlock.dominatorTree = parentBlock.dominatorTree.clone();
         if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.thenDefaultId.ordinal()) {
@@ -761,9 +764,9 @@ public class Parser {
             elseBlock.parentBlocks.add(parentBlock);
             parentBlock.childBlocks.add(elseBlock);
             irTree.current = elseBlock;
-            Instruction empty = new Instruction(Operators.empty);
-            irTree.current.instructions.add(empty);
-            irTree.current.instructionIDs.add(empty.IDNum);
+            Instruction emptyElse = new Instruction(Operators.empty);
+            irTree.current.instructions.add(emptyElse);
+            irTree.current.instructionIDs.add(emptyElse.IDNum);
             statSequence(irTree);
         } else { //empty else block
             elseBlock.valueInstructionMap.putAll(parentBlock.valueInstructionMap);
