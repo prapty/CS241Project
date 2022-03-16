@@ -14,6 +14,7 @@ public class Parser {
         token = lexer.nextToken();
         zeroOperand = new Operand(true, 0, null, -1);
         assignZeroInstruction = new Instruction(Operators.constant, zeroOperand, zeroOperand);
+        assignZeroInstruction.storeRegister = Registers.R0.name();
         visitedBlocks = new HashSet<>();
         functionInfo = new HashMap<>();
     }

@@ -1,4 +1,5 @@
 
+import java.io.IOException;
 import java.util.*;
 
 public class InterferenceGraph {
@@ -18,7 +19,7 @@ public class InterferenceGraph {
             idInstructionMap.put(instruction.IDNum, instruction);
         }
         functionsInterferenceGraph = new HashMap<>();
-        noLive = new ArrayList<>(Arrays.asList(Operators.write, Operators.writeNL, Operators.empty, Operators.constant, Operators.store, Operators.end, Operators.bra, Operators.bne, Operators.beq, Operators.ble, Operators.blt, Operators.bge, Operators.bgt, Operators.kill, Operators.cmp, Operators.push, Operators.pushUsedRegisters, Operators.popUsedRegisters, Operators.jsr));
+        noLive = new ArrayList<>(Arrays.asList(Operators.write, Operators.writeNL, Operators.empty, Operators.store, Operators.end, Operators.bra, Operators.bne, Operators.beq, Operators.ble, Operators.blt, Operators.bge, Operators.bgt, Operators.kill, Operators.cmp, Operators.push, Operators.pushUsedRegisters, Operators.popUsedRegisters, Operators.jsr));
     }
 
     public HashMap<Instruction, GraphNode> getGraph() {
@@ -35,11 +36,13 @@ public class InterferenceGraph {
         HashMap<Integer, HashSet<Instruction>> elseLiveValues = new HashMap<>();
         blockLiveValues.put(current.IDNum, new HashSet<>());
 
-        while (current != irTree.constants) {
+       // while (current != irTree.constants) {
+        while (current !=null) {
+            idBlockMap.put(current.IDNum, current);
             HashSet<Instruction> liveValues = new HashSet<>();
             HashSet<Instruction> thenValues = new HashSet<>();
             HashSet<Instruction> elseValues = new HashSet<>();
-            if (current.childBlocks.size() > 0) {
+            if (current.childBlocks!=null && current.childBlocks.size() > 0) {
                 if (current.ifDiamond==IfDiamond.ifBlock) {
                     if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                         liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
@@ -76,17 +79,30 @@ public class InterferenceGraph {
                     InterferenceGraph functionIG = new InterferenceGraph(f.irTree);
                     functionsInterferenceGraph.putIfAbsent(f, functionIG);
                 } else {
+                    BasicBlock child = current.childBlocks.get(0);
                     if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                         liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
+                    }
+                    if(child.parentBlocks.size()>1){
+                        //child is a join block
+                        int parentIndex = child.parentBlocks.indexOf(current);
+                        if(parentIndex==0){
+                            //current is then block
+                            if (thenLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
+                                liveValues.addAll(thenLiveValues.get(current.childBlocks.get(0).IDNum));
+                            }
+                        }
+                        else{
+                            //current is else block
+                            if (elseLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
+                                liveValues.addAll(elseLiveValues.get(current.childBlocks.get(0).IDNum));
+                            }
+                        }
                     }
                 }
             }
             for (int i = current.instructions.size() - 1; i >= 0; i--) {
                 Instruction currInstr = current.instructions.get(i);
-                boolean joinPi = false;
-                if(irTree.current.ifDiamond==IfDiamond.joinBlock && currInstr.operator==Operators.phi){
-                    joinPi = true;
-                }
                 idInstructionMap.put(currInstr.IDNum, currInstr);
                 liveValues.remove(currInstr);
                 thenValues.remove(currInstr);
@@ -96,11 +112,12 @@ public class InterferenceGraph {
                 if (noLive.contains(currInstr.operator)) {
                     live = false;
                 }
-                boolean notConstant = true;
-                if ((currInstr.firstOp != null && currInstr.firstOp.constant) || (currInstr.secondOp != null && currInstr.secondOp.constant)) {
-                    notConstant = false;
-                }
-                if (live && notConstant) {
+//                boolean bothConstant = false;
+//                if ((currInstr.firstOp != null && currInstr.firstOp.constant) && (currInstr.secondOp != null && currInstr.secondOp.constant)) {
+//                    bothConstant = true;
+//                }
+                //if (live && !bothConstant) {
+                if (live) {
                     for (Instruction j : liveValues) {
                         if (j != null) {
                             createEdge(graph, j, currInstr);
@@ -117,26 +134,26 @@ public class InterferenceGraph {
                         }
                     }
                 }
-                if (currInstr.firstOp != null && !currInstr.firstOp.constant && currInstr.firstOp.id != -1 && currInstr.firstOp.valGenerator != null && currInstr.operator.toString().charAt(0) != 'b') {
+                if (currInstr.firstOp != null && currInstr.firstOp.valGenerator != null && currInstr.operator.toString().charAt(0) != 'b') {
                     if (current.isCond) {
                         currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested - 1);
                     } else {
                         currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested);
                     }
-                    if(joinPi){
+                    if(currInstr.operator==Operators.phi){
                         thenValues.add(currInstr.firstOp.returnVal);
                     }
                     else{
                         liveValues.add(currInstr.firstOp.returnVal);
                     }
                 }
-                if (currInstr.secondOp != null && !currInstr.secondOp.constant && currInstr.secondOp.id != -1 && currInstr.secondOp.valGenerator != null && currInstr.operator.toString().charAt(0) != 'b') {
+                if (currInstr.secondOp != null && currInstr.secondOp.valGenerator != null && currInstr.operator.toString().charAt(0) != 'b') {
                     if (current.isCond) {
                         currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested - 1);
                     } else {
                         currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested);
                     }
-                    if(joinPi){
+                    if(currInstr.operator==Operators.phi){
                         elseValues.add(currInstr.secondOp.returnVal);
                     }
                     else{
@@ -323,6 +340,7 @@ public class InterferenceGraph {
         int numColor = 1;
         Set<Integer>excludeColorSet = new HashSet<>(Arrays.asList(0, 27, 28, 29, 30, 31));
         Map<String, String>registerNameNumMap = new HashMap<>();
+        registerNameNumMap.put(Registers.R0.name(), "R0");
         registerNameNumMap.put(Registers.SP.name(), "R29");
         registerNameNumMap.put(Registers.FP.name(), "R28");
         registerNameNumMap.put(Registers.RV.name(), "R27");
@@ -332,11 +350,12 @@ public class InterferenceGraph {
         while(!sortedNodes.isEmpty()){
             GraphNode node = sortedNodes.poll();
             boolean colored = false;
+            String allocatedRegister = null;
             if (node.instruction.storeRegister == null) {
                 for (int i = 1; i <= numColor; i++) {
                     if (isColorAvailable(node, i)) {
                         colored = true;
-                        node.instruction.storeRegister = register + i;
+                        allocatedRegister = register + i;
                         break;
                     }
                 }
@@ -345,18 +364,25 @@ public class InterferenceGraph {
                     while (excludeColorSet.contains(numColor)) {
                         numColor++;
                     }
-                    String allocatedRegister = register+numColor;
-                    node.instruction.storeRegister=allocatedRegister;
-                    if(node.members!=null && node.members.size()>0){
-                        for(GraphNode member: node.members){
-                            member.instruction.storeRegister = allocatedRegister;
-                        }
+                    allocatedRegister = register+numColor;
+                }
+                node.instruction.storeRegister=allocatedRegister;
+                if(node.members!=null && node.members.size()>0){
+                    for(GraphNode member: node.members){
+                        member.instruction.storeRegister = allocatedRegister;
                     }
-                    node.instruction.storeRegister = register + numColor;
                 }
             } else {
                 node.instruction.storeRegister = registerNameNumMap.get(node.instruction.storeRegister);
             }
+        }
+        String coloredFileName = "unresolvedPhiDot.dot";
+        Dot coloredDot = new Dot(coloredFileName);
+        coloredDot.idInstructionMap = idInstructionMap;
+        try {
+            coloredDot.makeDotGraph(irTree);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         String defaultRegister = "R1";
         for (Integer id : idInstructionMap.keySet()) {
@@ -428,47 +454,113 @@ public class InterferenceGraph {
         Comparator<GraphNode>graphNodComparator = new GraphNodeComparator();
         PriorityQueue<GraphNode>sortedNodes = new PriorityQueue<>(graphNodComparator);
         for(Instruction instruction: graph.keySet()){
+            GraphNode node = graph.get(instruction);
+            if(node.clusterAdded){
+                continue;
+            }
             if(instruction.operator==Operators.phi){
-                    GraphNode cluster = new GraphNode(instruction.IDNum, instruction);
-                    GraphNode phiNode = graph.get(instruction);
-                    GraphNode leftNode, rightNode;
-                    cluster.neighbors.addAll(phiNode.neighbors);
-                    cluster.members.add(phiNode);
-                    Instruction leftInstr = idInstructionMap.get(instruction.firstOp.valGenerator);
-                    if(leftInstr!=null){
-                        leftNode = graph.get(leftInstr);
-                        if(leftNode!=null){
-                            if(!leftNode.neighbors.contains(phiNode)){
-                                cluster.members.add(leftNode);
-                                cluster.neighbors.addAll(leftNode.neighbors);
-                                sortedNodes.remove(leftNode);
-                            }
-                        }
-                    }
-                Instruction rightInstr = idInstructionMap.get(instruction.secondOp.valGenerator);
-                if(rightInstr!=null){
-                    rightNode = graph.get(rightInstr);
-                    if(rightNode!=null){
-                        boolean interfere = false;
-                        for(GraphNode node: cluster.members){
-                            if(rightNode.neighbors.contains(node)){
-                                interfere = true;
-                            }
-                        }
-                        if(!interfere){
-                            cluster.members.add(rightNode);
-                            cluster.neighbors.addAll(rightNode.neighbors);
-                            sortedNodes.remove(rightNode);
-                        }
-                    }
-                }
+                GraphNode cluster = new GraphNode(instruction.IDNum, instruction);
+                cluster = buildCluster(graph, instruction, cluster, sortedNodes);
                 sortedNodes.add(cluster);
             }
-            else {
-                sortedNodes.add(graph.get(instruction));
+            else if(!sortedNodes.contains(node)){
+                sortedNodes.add(node);
             }
         }
         return sortedNodes;
+    }
+
+    private GraphNode buildCluster(HashMap<Instruction, GraphNode>graph, Instruction instruction, GraphNode cluster, PriorityQueue<GraphNode>sortedNodes){
+        GraphNode phiNode = graph.get(instruction);
+        GraphNode leftNode, rightNode;
+        cluster.neighbors.addAll(phiNode.neighbors);
+        cluster.members.add(phiNode);
+        sortedNodes.remove(phiNode);
+        phiNode.clusterAdded = true;
+        Instruction leftInstr = idInstructionMap.get(instruction.firstOp.valGenerator);
+        if(leftInstr!=null) {
+            leftNode = graph.get(leftInstr);
+            if (leftNode != null) {
+                if (leftInstr.operator != Operators.phi) {
+                    if (!leftNode.neighbors.contains(phiNode)) {
+                        cluster.members.add(leftNode);
+                        leftNode.clusterAdded = true;
+                        cluster.neighbors.addAll(leftNode.neighbors);
+                        sortedNodes.remove(leftNode);
+                    }
+                } else {
+                    if(leftNode.members.size()==0){
+                        //cluster not processed
+                        leftNode = buildCluster(graph, leftInstr, leftNode, sortedNodes);
+                    }
+                    boolean interfere = false;
+                    for(GraphNode node: leftNode.members){
+                        for(GraphNode node1: cluster.members){
+                            if(node.neighbors.contains(node1)){
+                                interfere = true;
+                            }
+                        }
+                    }
+                   if(!interfere){
+                       for(GraphNode node: leftNode.members){
+                           cluster.members.add(node);
+                           node.clusterAdded = true;
+                           cluster.neighbors.addAll(node.neighbors);
+                       }
+                       sortedNodes.remove(leftNode);
+                   }
+                   else if(!sortedNodes.contains(leftNode)){
+                       sortedNodes.add(leftNode);
+                   }
+                }
+            }
+        }
+        Instruction rightInstr = idInstructionMap.get(instruction.secondOp.valGenerator);
+        if(rightInstr!=null){
+            rightNode = graph.get(rightInstr);
+            if(rightNode!=null){
+                if(rightInstr.operator!=Operators.phi){
+                    boolean interfere = false;
+                    for(GraphNode node: cluster.members){
+                        if(rightNode.neighbors.contains(node)){
+                            interfere = true;
+                        }
+                    }
+                    if(!interfere){
+                        cluster.members.add(rightNode);
+                        rightNode.clusterAdded = true;
+                        cluster.neighbors.addAll(rightNode.neighbors);
+                        sortedNodes.remove(rightNode);
+                    }
+                }
+                else {
+                    if(rightNode.members.size()==0){
+                        //cluster not processed
+                        rightNode = buildCluster(graph, rightInstr, rightNode, sortedNodes);
+                    }
+                    boolean interfere = false;
+                    for(GraphNode node: rightNode.members){
+                        for(GraphNode node1: cluster.members){
+                            if(node.neighbors.contains(node1)){
+                                interfere = true;
+                            }
+                        }
+                    }
+                    if(!interfere){
+                        for(GraphNode node: rightNode.members){
+                            cluster.members.add(node);
+                            node.clusterAdded = true;
+                            cluster.neighbors.addAll(node.neighbors);
+                        }
+                        sortedNodes.remove(rightNode);
+                    }
+                    else if(!sortedNodes.contains(rightNode)){
+                        sortedNodes.add(rightNode);
+                    }
+                }
+            }
+        }
+        return cluster;
     }
 
     private boolean isColorAvailable(GraphNode node, int color) {

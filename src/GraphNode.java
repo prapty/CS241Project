@@ -8,6 +8,7 @@ public class GraphNode {
     Instruction instruction;
     HashSet<GraphNode> neighbors;
     List<GraphNode>members;
+    boolean clusterAdded;
 
     public GraphNode(int id, Instruction instr){
         instrID = id;

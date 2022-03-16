@@ -1,14 +1,18 @@
 main
-var a, b; {
+var a, b;
+{
     let a <- call InputNum();
-    let b <- a + 2;
-    if a < 0 then
-        if b < 0 then
-            call OutputNum(a)
-        else
-            call OutputNum(b)
-        fi;
+    let b <- call InputNum();
+
+	if a < b
+	then
+		let a <- a + 1;
+		let b <- b + 1;
     else
-        call OutputNum(a)
-    fi;
+        let a <- a + 2;
+		let b <- b + 2;
+	fi;
+
+	call OutputNum(a);
+	call OutputNum(b);
 }.
