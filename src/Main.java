@@ -3,10 +3,10 @@ import java.util.HashMap;
 
 public class Main {
     public static void main(String[] args) {
-//        String fileName = args[0];
+        String fileName = args[0];
         try {
-//            Parser parser = new Parser(fileName);
-            Parser parser = new Parser("simpleArray.txt");
+            Parser parser = new Parser(fileName);
+            //Parser parser = new Parser("simpleArray.txt");
             IntermediateTree intermediateTree = parser.getIntermediateRepresentation();
             String outputFileName = "outputCodeDot.dot";
             Dot dot = new Dot(outputFileName);
