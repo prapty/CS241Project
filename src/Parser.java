@@ -673,7 +673,7 @@ public class Parser {
                 token = lexer.nextToken();
             }
 
-            returnValue = new Operand(true, -1, readInstr.IDNum, -1);
+            returnValue = new Operand(false, -1, readInstr.IDNum, -1);
             returnValue.returnVal = readInstr;
         } else if (token.id == ReservedWords.OutputNumDefaultId.ordinal()) {
             if (!fromStatement) {
@@ -1601,7 +1601,7 @@ public class Parser {
             Instruction constantFour = new Instruction(Operators.constant, four, four);
             four = constantDuplicate(irTree, four, constantFour);
             Instruction mul = new Instruction(Operators.mul, indexes.get(0), four);
-            ofs = new Operand(false, -1, mul.IDNum, -1);
+            ofs = new Operand(mul.firstOp.constant && mul.secondOp.constant, -1, mul.IDNum, -1);
             ofs.returnVal = mul;
             Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[Operators.mul.ordinal()], mul);
             boolean allowdupl = (irTree.current.isCond || irTree.current.isWhileBlock) && (!mul.firstOp.constant || !mul.secondOp.constant);
@@ -1621,7 +1621,7 @@ public class Parser {
             Operand op = indexes.get(indexes.size() - 1);
             for (int i = indexes.size() - 2; i >= 0; i--) { //map multi D to 1D storage
                 Instruction mul = new Instruction(Operators.mul, op, arr.opDims.get(i));
-                op = new Operand(false, -1, mul.IDNum, -1);
+                op = new Operand(mul.firstOp.constant && mul.secondOp.constant, -1, mul.IDNum, -1);
                 op.returnVal = mul;
                 Instruction duplicate = getDuplicateInstruction(irTree.current.dominatorTree[Operators.mul.ordinal()], mul);
                 boolean allowdupl = (irTree.current.isCond || irTree.current.isWhileBlock) && (!mul.firstOp.constant || !mul.secondOp.constant);
@@ -1639,7 +1639,7 @@ public class Parser {
                 }
 
                 Instruction add = new Instruction(Operators.add, op, indexes.get(i));
-                op = new Operand(false, -1, add.IDNum, -1);
+                op = new Operand(add.firstOp.constant && add.secondOp.constant, -1, add.IDNum, -1);
                 op.returnVal = add;
                 duplicate = getDuplicateInstruction(irTree.current.dominatorTree[Operators.add.ordinal()], add);
                 allowdupl = (irTree.current.isCond || irTree.current.isWhileBlock) && (!add.firstOp.constant || !add.secondOp.constant);
@@ -1678,9 +1678,11 @@ public class Parser {
             }
         }
         Operand FP = new Operand(Registers.FP.name());
+        FP.constant = true;
         Operand arrayBase = new Operand(arr.getStartingAddress() + Registers.FP.name());
+        arrayBase.constant = true;
         Instruction base = new Instruction(Operators.add, FP, arrayBase);
-        Operand bas = new Operand(false, -1, base.IDNum, -1);
+        Operand bas = new Operand(true, -1, base.IDNum, -1);
         bas.returnVal = base;
         Instruction duplicate = getDuplicateInstructionFP(irTree.current.dominatorTree[Operators.add.ordinal()], base);
         if (duplicate != null) {
@@ -1698,7 +1700,7 @@ public class Parser {
 
         Instruction adda = new Instruction(Operators.adda, ofs, bas);
         duplicate = getDuplicateInstruction(irTree.current.dominatorTree[Operators.adda.ordinal()], adda);
-        ret = new Operand(false, -1, adda.IDNum, -1);
+        ret = new Operand(adda.firstOp.constant && adda.secondOp.constant, -1, adda.IDNum, -1);
         ret.returnVal = adda;
         boolean allowdupl = (irTree.current.isCond || irTree.current.isWhileBlock) && (!adda.firstOp.constant || !adda.secondOp.constant);
         if (duplicate != null && !allowdupl) {
