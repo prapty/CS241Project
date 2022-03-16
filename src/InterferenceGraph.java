@@ -110,11 +110,6 @@ public class InterferenceGraph {
                 if (noLive.contains(currInstr.operator)) {
                     live = false;
                 }
-//                boolean bothConstant = false;
-//                if ((currInstr.firstOp != null && currInstr.firstOp.constant) && (currInstr.secondOp != null && currInstr.secondOp.constant)) {
-//                    bothConstant = true;
-//                }
-                //if (live && !bothConstant) {
                 if (live) {
                     for (Instruction j : liveValues) {
                         if (j != null) {
@@ -147,9 +142,9 @@ public class InterferenceGraph {
                 }
                 if (currInstr.secondOp != null && currInstr.secondOp.valGenerator != null && currInstr.operator.toString().charAt(0) != 'b') {
                     if (current.isCond) {
-                        currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested - 1);
+                        currInstr.secondOp.returnVal.cost += Math.pow(10, current.nested - 1);
                     } else {
-                        currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested);
+                        currInstr.secondOp.returnVal.cost += Math.pow(10, current.nested);
                     }
                     if(currInstr.operator==Operators.phi){
                         elseValues.add(currInstr.secondOp.returnVal);
@@ -157,14 +152,20 @@ public class InterferenceGraph {
                         liveValues.add(currInstr.secondOp.returnVal);
                     }
                 }
+                if (currInstr.thirdOp != null && currInstr.thirdOp.valGenerator != null && currInstr.operator.toString().charAt(0) != 'b') {
+                    if (current.isCond) {
+                        currInstr.thirdOp.returnVal.cost += Math.pow(10, current.nested - 1);
+                    } else {
+                        currInstr.thirdOp.returnVal.cost += Math.pow(10, current.nested);
+                    }
+                    liveValues.add(currInstr.thirdOp.returnVal);
+                }
             }
             HashSet<Instruction> blockLives = new HashSet<>();
             blockLives.addAll(liveValues);
             blockLiveValues.put(current.IDNum, blockLives);
-            if (current.ifDiamond == IfDiamond.joinBlock) {
-                thenLiveValues.put(current.IDNum, thenValues);
-                elseLiveValues.put(current.IDNum, elseValues);
-            }
+            thenLiveValues.put(current.IDNum, thenValues);
+            elseLiveValues.put(current.IDNum, elseValues);
             for (BasicBlock b : current.parentBlocks) {
                 if (!visited(b, visite)) {
                     toVisit.add(b);
@@ -193,7 +194,7 @@ public class InterferenceGraph {
 
         int maxIDblockNum = f.irTree.current.IDNum;
 
-        while (current.IDNum >= f.irTree.start.IDNum && current.IDNum <= maxIDblockNum) {
+        while (current.IDNum >= f.irTree.constants.IDNum && current.IDNum <= maxIDblockNum) {
             HashSet<Instruction> liveValues = new HashSet<>();
             HashSet<Instruction> thenValues = new HashSet<>();
             HashSet<Instruction> elseValues = new HashSet<>();
@@ -294,38 +295,51 @@ public class InterferenceGraph {
                 if (noLive.contains(currInstr.operator)) {
                     live = false;
                 }
-                boolean notConstant = true;
-                if ((currInstr.firstOp != null && currInstr.firstOp.constant) || (currInstr.secondOp != null && currInstr.secondOp.constant)) {
-                    notConstant = false;
-
-                }
-                if (live && notConstant) {
+                if (live) {
                     for (Instruction j : liveValues) {
                         if (j != null) {
                             createEdge(graph, j, currInstr);
                         }
                     }
                 }
-                if (currInstr.firstOp != null && !currInstr.firstOp.constant && currInstr.firstOp.id != -1 && currInstr.firstOp.valGenerator != null && currInstr.operator.toString().charAt(0) != 'b') {
+                if (currInstr.firstOp != null && currInstr.firstOp.valGenerator != null && currInstr.operator.toString().charAt(0) != 'b') {
                     if (current.isCond) {
                         currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested - 1);
                     } else {
                         currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested);
                     }
-                    liveValues.add(currInstr.firstOp.returnVal);
+                    if(currInstr.operator==Operators.phi){
+                        thenValues.add(currInstr.firstOp.returnVal);
+                    } else {
+                        liveValues.add(currInstr.firstOp.returnVal);
+                    }
                 }
-                if (currInstr.secondOp != null && !currInstr.secondOp.constant && currInstr.secondOp.id != -1 && currInstr.secondOp.valGenerator != null && currInstr.operator.toString().charAt(0) != 'b') {
+                if (currInstr.secondOp != null && currInstr.secondOp.valGenerator != null && currInstr.operator.toString().charAt(0) != 'b') {
                     if (current.isCond) {
-                        currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested - 1);
+                        currInstr.secondOp.returnVal.cost += Math.pow(10, current.nested - 1);
                     } else {
-                        currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested);
+                        currInstr.secondOp.returnVal.cost += Math.pow(10, current.nested);
                     }
-                    liveValues.add(currInstr.secondOp.returnVal);
+                    if(currInstr.operator==Operators.phi){
+                        elseValues.add(currInstr.secondOp.returnVal);
+                    } else {
+                        liveValues.add(currInstr.secondOp.returnVal);
+                    }
+                }
+                if (currInstr.thirdOp != null && currInstr.thirdOp.valGenerator != null && currInstr.operator.toString().charAt(0) != 'b') {
+                    if (current.isCond) {
+                        currInstr.thirdOp.returnVal.cost += Math.pow(10, current.nested - 1);
+                    } else {
+                        currInstr.thirdOp.returnVal.cost += Math.pow(10, current.nested);
+                    }
+                    liveValues.add(currInstr.thirdOp.returnVal);
                 }
             }
             HashSet<Instruction> blockLives = new HashSet<>();
             blockLives.addAll(liveValues);
             blockLiveValues.put(current.IDNum, blockLives);
+            thenLiveValues.put(current.IDNum, thenValues);
+            elseLiveValues.put(current.IDNum, elseValues);
             for (BasicBlock b : current.parentBlocks) {
                 if (!visited(b, visite)) {
                     toVisit.add(b);
@@ -421,6 +435,22 @@ public class InterferenceGraph {
         String defaultRegister = "R1";
         for (Integer id : idInstructionMap.keySet()) {
             Instruction instruction = idInstructionMap.get(id);
+
+            if(instruction.firstOp != null && instruction.firstOp.valGenerator == null && instruction.firstOp.arraybase != null){
+                if(registerNameNumMap.get(instruction.firstOp.arraybase)!=null){
+                    instruction.firstOp.arraybase = registerNameNumMap.get(instruction.firstOp.arraybase);
+                }
+            }
+            if(instruction.secondOp != null && instruction.secondOp.valGenerator == null && instruction.secondOp.arraybase != null){
+                if(registerNameNumMap.get(instruction.secondOp.arraybase)!=null){
+                    instruction.secondOp.arraybase = registerNameNumMap.get(instruction.secondOp.arraybase);
+                }
+            }
+            if(instruction.thirdOp != null && instruction.thirdOp.valGenerator == null && instruction.thirdOp.arraybase != null){
+                if(registerNameNumMap.get(instruction.thirdOp.arraybase)!=null){
+                    instruction.thirdOp.arraybase = registerNameNumMap.get(instruction.thirdOp.arraybase);
+                }
+            }
             if (!noLive.contains(instruction.operator) && instruction.storeRegister == null) {
                 instruction.storeRegister = defaultRegister;
             }

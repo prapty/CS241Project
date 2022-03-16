@@ -72,8 +72,7 @@ public class Instruction {
         }
         if (secondOp != null) {
             if (secondOp.arraybase != null) {
-                ts += secondOp.arraybase;
-                ;
+                ts += secondOp.arraybase + " ";
             } else if (secondOp.valGenerator != null) {
                 ts += "(" + secondOp.valGenerator + ")";
             } else {
@@ -126,12 +125,12 @@ public class Instruction {
         }
         if (secondOp != null) {
             if (secondOp.arraybase != null) {
-                ts += secondOp.arraybase;
+                ts += secondOp.arraybase +" ";
                 ;
             } else if (secondOp.valGenerator != null) {
                 Instruction valInstr = idInstructionMap.get(secondOp.valGenerator);
                 if(!noChange.contains(operator) && valInstr!=null && valInstr.storeRegister!=null){
-                    ts += valInstr.storeRegister;
+                    ts += valInstr.storeRegister + " ";
                 }
                 else{
                     ts += "(" + secondOp.valGenerator + ")";
@@ -143,7 +142,6 @@ public class Instruction {
         if (thirdOp != null) {
             if (thirdOp.arraybase != null) {
                 ts += thirdOp.arraybase;
-                ;
             } else if (thirdOp.valGenerator != null) {
                 Instruction valInstr = idInstructionMap.get(thirdOp.valGenerator);
                 if(!noChange.contains(operator) && valInstr!=null && valInstr.storeRegister!=null){

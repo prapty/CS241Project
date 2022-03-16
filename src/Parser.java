@@ -265,6 +265,7 @@ public class Parser {
             irTree.current.instructionIDs.add(addFPInstruction.IDNum);
             //create operand for the access
             Operand addressOp = new Operand(false, 0, addFPInstruction.IDNum, -1);
+            addressOp.returnVal = addFPInstruction;
             //pop arguments from the stack
             for (int i = function.parameters.size() - 1; i >= 0; i--) {
                 //pop will use addressOp to access the argument and then add 4 to it to be used for next argument
