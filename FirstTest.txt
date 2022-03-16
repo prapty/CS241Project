@@ -1,18 +1,19 @@
 main
-var a, b;
+var a, b, c;
+function test (x, y);
+var z;
 {
-    let a <- call InputNum();
-    let b <- call InputNum();
+  let z <- x + y;
+  call OutputNum(z);
+  return z;
+};
+{
+	let a <- call InputNum;
 
-	if a < b
-	then
-		let a <- a + 1;
-		let b <- b + 1;
-    else
-        let a <- a + 2;
-		let b <- b + 2;
-	fi;
+	let b <- a + 1;
 
+    let c <- call test(a+b, a*b);
 	call OutputNum(a);
 	call OutputNum(b);
+	call OutputNum(c);
 }.

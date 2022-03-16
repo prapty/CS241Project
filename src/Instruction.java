@@ -7,6 +7,7 @@ public class Instruction {
     Operators operator;
     Operand firstOp;
     Operand secondOp;
+    Operand thirdOp;
     int IDNum;
     static int instrNum = 1;
     boolean noDuplicateCheck;
@@ -26,6 +27,17 @@ public class Instruction {
         cost = 0;
     }
 
+    public Instruction(Operators operator, Operand firstOp, Operand secondOp, Operand thirdOp) {
+        this.operator = operator;
+        this.firstOp = firstOp;
+        this.secondOp = secondOp;
+        this.thirdOp = thirdOp;
+        storeRegister = null;
+        IDNum = instrNum;
+        instrNum++;
+        arguments = new ArrayList<>();
+        cost = 0;
+    }
     public Instruction(Operators operator) {
         this.operator = operator;
         firstOp = null;
@@ -66,6 +78,16 @@ public class Instruction {
                 ts += "(" + secondOp.valGenerator + ")";
             } else {
                 ts += "#" + secondOp.constVal;
+            }
+        }
+        if (thirdOp != null) {
+            if (thirdOp.arraybase != null) {
+                ts += thirdOp.arraybase;
+                ;
+            } else if (thirdOp.valGenerator != null) {
+                ts += "(" + thirdOp.valGenerator + ")";
+            } else {
+                ts += "#" + thirdOp.constVal;
             }
         }
         if(storeRegister!=null){
@@ -116,6 +138,22 @@ public class Instruction {
                 }
             } else {
                 ts += "#" + secondOp.constVal;
+            }
+        }
+        if (thirdOp != null) {
+            if (thirdOp.arraybase != null) {
+                ts += thirdOp.arraybase;
+                ;
+            } else if (thirdOp.valGenerator != null) {
+                Instruction valInstr = idInstructionMap.get(thirdOp.valGenerator);
+                if(!noChange.contains(operator) && valInstr!=null && valInstr.storeRegister!=null){
+                    ts += valInstr.storeRegister;
+                }
+                else{
+                    ts += "(" + thirdOp.valGenerator + ")";
+                }
+            } else {
+                ts += "#" + thirdOp.constVal;
             }
         }
         if(storeRegister!=null){

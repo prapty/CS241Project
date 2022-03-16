@@ -5,12 +5,12 @@ public class Function {
     List<Integer>parameters;
     IntermediateTree irTree;
 
-    public Function(boolean isVoid, BasicBlock constants, Integer identity) {
+    public Function(boolean isVoid, Integer identity) {
         parameters = new ArrayList<>();
-        irTree = new IntermediateTree(constants);
-        irTree.start.functionHead = true;
+        irTree = new IntermediateTree();
+        irTree.constants.functionHead = true;
         this.isVoid = isVoid;
         irTree.isVoid = isVoid;
-        irTree.start.functionIdentity = identity;
+        irTree.constants.functionIdentity = identity;
     }
 }
