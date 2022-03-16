@@ -37,14 +37,14 @@ public class InterferenceGraph {
         HashMap<Integer, HashSet<Instruction>> elseLiveValues = new HashMap<>();
         blockLiveValues.put(current.IDNum, new HashSet<>());
 
-       // while (current != irTree.constants) {
-        while (current !=null) {
+        // while (current != irTree.constants) {
+        while (current != null) {
             idBlockMap.put(current.IDNum, current);
             HashSet<Instruction> liveValues = new HashSet<>();
             HashSet<Instruction> thenValues = new HashSet<>();
             HashSet<Instruction> elseValues = new HashSet<>();
-            if (current.childBlocks!=null && current.childBlocks.size() > 0) {
-                if (current.ifDiamond==IfDiamond.ifBlock) {
+            if (current.childBlocks != null && current.childBlocks.size() > 0) {
+                if (current.ifDiamond == IfDiamond.ifBlock) {
                     if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                         liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
                     }
@@ -81,16 +81,15 @@ public class InterferenceGraph {
                     if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                         liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
                     }
-                    if(child.parentBlocks.size()>1){
+                    if (child.parentBlocks.size() > 1) {
                         //child is a join block
                         int parentIndex = child.parentBlocks.indexOf(current);
-                        if(parentIndex==0){
+                        if (parentIndex == 0) {
                             //current is then block
                             if (thenLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                                 liveValues.addAll(thenLiveValues.get(current.childBlocks.get(0).IDNum));
                             }
-                        }
-                        else{
+                        } else {
                             //current is else block
                             if (elseLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                                 liveValues.addAll(elseLiveValues.get(current.childBlocks.get(0).IDNum));
@@ -133,10 +132,9 @@ public class InterferenceGraph {
                     } else {
                         currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested);
                     }
-                    if(currInstr.operator==Operators.phi){
+                    if (currInstr.operator == Operators.phi) {
                         thenValues.add(currInstr.firstOp.returnVal);
-                    }
-                    else{
+                    } else {
                         liveValues.add(currInstr.firstOp.returnVal);
                     }
                 }
@@ -146,7 +144,7 @@ public class InterferenceGraph {
                     } else {
                         currInstr.secondOp.returnVal.cost += Math.pow(10, current.nested);
                     }
-                    if(currInstr.operator==Operators.phi){
+                    if (currInstr.operator == Operators.phi) {
                         elseValues.add(currInstr.secondOp.returnVal);
                     } else {
                         liveValues.add(currInstr.secondOp.returnVal);
@@ -308,7 +306,7 @@ public class InterferenceGraph {
                     } else {
                         currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested);
                     }
-                    if(currInstr.operator==Operators.phi){
+                    if (currInstr.operator == Operators.phi) {
                         thenValues.add(currInstr.firstOp.returnVal);
                     } else {
                         liveValues.add(currInstr.firstOp.returnVal);
@@ -320,7 +318,7 @@ public class InterferenceGraph {
                     } else {
                         currInstr.secondOp.returnVal.cost += Math.pow(10, current.nested);
                     }
-                    if(currInstr.operator==Operators.phi){
+                    if (currInstr.operator == Operators.phi) {
                         elseValues.add(currInstr.secondOp.returnVal);
                     } else {
                         liveValues.add(currInstr.secondOp.returnVal);
@@ -386,8 +384,8 @@ public class InterferenceGraph {
 
     public void colorGraph(HashMap<Instruction, GraphNode> graph) {
         int numColor = 1;
-        Set<Integer>excludeColorSet = new HashSet<>(Arrays.asList(0, 27, 28, 29, 30, 31));
-        Map<String, String>registerNameNumMap = new HashMap<>();
+        Set<Integer> excludeColorSet = new HashSet<>(Arrays.asList(0, 27, 28, 29, 30, 31));
+        Map<String, String> registerNameNumMap = new HashMap<>();
         registerNameNumMap.put(Registers.R0.name(), "R0");
         registerNameNumMap.put(Registers.SP.name(), "R29");
         registerNameNumMap.put(Registers.FP.name(), "R28");
@@ -412,11 +410,11 @@ public class InterferenceGraph {
                     while (excludeColorSet.contains(numColor)) {
                         numColor++;
                     }
-                    allocatedRegister = register+numColor;
+                    allocatedRegister = register + numColor;
                 }
-                node.instruction.storeRegister=allocatedRegister;
-                if(node.members!=null && node.members.size()>0){
-                    for(GraphNode member: node.members){
+                node.instruction.storeRegister = allocatedRegister;
+                if (node.members != null && node.members.size() > 0) {
+                    for (GraphNode member : node.members) {
                         member.instruction.storeRegister = allocatedRegister;
                     }
                 }
@@ -436,18 +434,18 @@ public class InterferenceGraph {
         for (Integer id : idInstructionMap.keySet()) {
             Instruction instruction = idInstructionMap.get(id);
 
-            if(instruction.firstOp != null && instruction.firstOp.valGenerator == null && instruction.firstOp.arraybase != null){
-                if(registerNameNumMap.get(instruction.firstOp.arraybase)!=null){
+            if (instruction.firstOp != null && instruction.firstOp.valGenerator == null && instruction.firstOp.arraybase != null) {
+                if (registerNameNumMap.get(instruction.firstOp.arraybase) != null) {
                     instruction.firstOp.arraybase = registerNameNumMap.get(instruction.firstOp.arraybase);
                 }
             }
-            if(instruction.secondOp != null && instruction.secondOp.valGenerator == null && instruction.secondOp.arraybase != null){
-                if(registerNameNumMap.get(instruction.secondOp.arraybase)!=null){
+            if (instruction.secondOp != null && instruction.secondOp.valGenerator == null && instruction.secondOp.arraybase != null) {
+                if (registerNameNumMap.get(instruction.secondOp.arraybase) != null) {
                     instruction.secondOp.arraybase = registerNameNumMap.get(instruction.secondOp.arraybase);
                 }
             }
-            if(instruction.thirdOp != null && instruction.thirdOp.valGenerator == null && instruction.thirdOp.arraybase != null){
-                if(registerNameNumMap.get(instruction.thirdOp.arraybase)!=null){
+            if (instruction.thirdOp != null && instruction.thirdOp.valGenerator == null && instruction.thirdOp.arraybase != null) {
+                if (registerNameNumMap.get(instruction.thirdOp.arraybase) != null) {
                     instruction.thirdOp.arraybase = registerNameNumMap.get(instruction.thirdOp.arraybase);
                 }
             }
@@ -491,6 +489,9 @@ public class InterferenceGraph {
             } else {
                 leftBlock.instructions.add(moveInstr);
                 leftBlock.instructionIDs.add(moveInstr.IDNum);
+                if (leftBlock.instructions.get(leftBlock.instructions.size() - 2).toString().charAt(0) == 'b') {
+                    Collections.swap(leftBlock.instructions, leftBlock.instructions.size() - 1, leftBlock.instructions.size() - 2);
+                }
             }
         }
 
@@ -507,6 +508,9 @@ public class InterferenceGraph {
             } else {
                 rightBlock.instructions.add(moveInstr);
                 rightBlock.instructionIDs.add(moveInstr.IDNum);
+                if (rightBlock.instructions.get(rightBlock.instructions.size() - 2).toString().charAt(0) == 'b') {
+                    Collections.swap(rightBlock.instructions, rightBlock.instructions.size() - 1, rightBlock.instructions.size() - 2);
+                }
             }
         }
         //remove phi
@@ -515,27 +519,26 @@ public class InterferenceGraph {
         phiBlock.instructionIDs.remove(idIndex);
     }
 
-    private PriorityQueue<GraphNode> buildPriorityQue(HashMap<Instruction, GraphNode>graph){
-        Comparator<GraphNode>graphNodComparator = new GraphNodeComparator();
-        PriorityQueue<GraphNode>sortedNodes = new PriorityQueue<>(graphNodComparator);
-        for(Instruction instruction: graph.keySet()){
+    private PriorityQueue<GraphNode> buildPriorityQue(HashMap<Instruction, GraphNode> graph) {
+        Comparator<GraphNode> graphNodComparator = new GraphNodeComparator();
+        PriorityQueue<GraphNode> sortedNodes = new PriorityQueue<>(graphNodComparator);
+        for (Instruction instruction : graph.keySet()) {
             GraphNode node = graph.get(instruction);
-            if(node.clusterAdded){
+            if (node.clusterAdded) {
                 continue;
             }
-            if(instruction.operator==Operators.phi){
+            if (instruction.operator == Operators.phi) {
                 GraphNode cluster = new GraphNode(instruction.IDNum, instruction);
                 cluster = buildCluster(graph, instruction, cluster, sortedNodes);
                 sortedNodes.add(cluster);
-            }
-            else if(!sortedNodes.contains(node)){
+            } else if (!sortedNodes.contains(node)) {
                 sortedNodes.add(node);
             }
         }
         return sortedNodes;
     }
 
-    private GraphNode buildCluster(HashMap<Instruction, GraphNode>graph, Instruction instruction, GraphNode cluster, PriorityQueue<GraphNode>sortedNodes){
+    private GraphNode buildCluster(HashMap<Instruction, GraphNode> graph, Instruction instruction, GraphNode cluster, PriorityQueue<GraphNode> sortedNodes) {
         GraphNode phiNode = graph.get(instruction);
         GraphNode leftNode, rightNode;
         cluster.neighbors.addAll(phiNode.neighbors);
@@ -543,7 +546,7 @@ public class InterferenceGraph {
         sortedNodes.remove(phiNode);
         phiNode.clusterAdded = true;
         Instruction leftInstr = idInstructionMap.get(instruction.firstOp.valGenerator);
-        if(leftInstr!=null) {
+        if (leftInstr != null) {
             leftNode = graph.get(leftInstr);
             if (leftNode != null) {
                 if (leftInstr.operator != Operators.phi) {
@@ -554,72 +557,69 @@ public class InterferenceGraph {
                         sortedNodes.remove(leftNode);
                     }
                 } else {
-                    if(leftNode.members.size()==0){
+                    if (leftNode.members.size() == 0) {
                         //cluster not processed
                         leftNode = buildCluster(graph, leftInstr, leftNode, sortedNodes);
                     }
                     boolean interfere = false;
-                    for(GraphNode node: leftNode.members){
-                        for(GraphNode node1: cluster.members){
-                            if(node.neighbors.contains(node1)){
+                    for (GraphNode node : leftNode.members) {
+                        for (GraphNode node1 : cluster.members) {
+                            if (node.neighbors.contains(node1)) {
                                 interfere = true;
                             }
                         }
                     }
-                   if(!interfere){
-                       for(GraphNode node: leftNode.members){
-                           cluster.members.add(node);
-                           node.clusterAdded = true;
-                           cluster.neighbors.addAll(node.neighbors);
-                       }
-                       sortedNodes.remove(leftNode);
-                   }
-                   else if(!sortedNodes.contains(leftNode)){
-                       sortedNodes.add(leftNode);
-                   }
+                    if (!interfere) {
+                        for (GraphNode node : leftNode.members) {
+                            cluster.members.add(node);
+                            node.clusterAdded = true;
+                            cluster.neighbors.addAll(node.neighbors);
+                        }
+                        sortedNodes.remove(leftNode);
+                    } else if (!sortedNodes.contains(leftNode)) {
+                        sortedNodes.add(leftNode);
+                    }
                 }
             }
         }
         Instruction rightInstr = idInstructionMap.get(instruction.secondOp.valGenerator);
-        if(rightInstr!=null){
+        if (rightInstr != null) {
             rightNode = graph.get(rightInstr);
-            if(rightNode!=null){
-                if(rightInstr.operator!=Operators.phi){
+            if (rightNode != null) {
+                if (rightInstr.operator != Operators.phi) {
                     boolean interfere = false;
-                    for(GraphNode node: cluster.members){
-                        if(rightNode.neighbors.contains(node)){
+                    for (GraphNode node : cluster.members) {
+                        if (rightNode.neighbors.contains(node)) {
                             interfere = true;
                         }
                     }
-                    if(!interfere){
+                    if (!interfere) {
                         cluster.members.add(rightNode);
                         rightNode.clusterAdded = true;
                         cluster.neighbors.addAll(rightNode.neighbors);
                         sortedNodes.remove(rightNode);
                     }
-                }
-                else {
-                    if(rightNode.members.size()==0){
+                } else {
+                    if (rightNode.members.size() == 0) {
                         //cluster not processed
                         rightNode = buildCluster(graph, rightInstr, rightNode, sortedNodes);
                     }
                     boolean interfere = false;
-                    for(GraphNode node: rightNode.members){
-                        for(GraphNode node1: cluster.members){
-                            if(node.neighbors.contains(node1)){
+                    for (GraphNode node : rightNode.members) {
+                        for (GraphNode node1 : cluster.members) {
+                            if (node.neighbors.contains(node1)) {
                                 interfere = true;
                             }
                         }
                     }
-                    if(!interfere){
-                        for(GraphNode node: rightNode.members){
+                    if (!interfere) {
+                        for (GraphNode node : rightNode.members) {
                             cluster.members.add(node);
                             node.clusterAdded = true;
                             cluster.neighbors.addAll(node.neighbors);
                         }
                         sortedNodes.remove(rightNode);
-                    }
-                    else if(!sortedNodes.contains(rightNode)){
+                    } else if (!sortedNodes.contains(rightNode)) {
                         sortedNodes.add(rightNode);
                     }
                 }
