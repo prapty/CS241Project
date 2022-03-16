@@ -1,14 +1,17 @@
 main
-var a, b;
+var a, b, c;
 {
     let a <- call InputNum();
     let b <- call InputNum();
+    let a<- b + 4;
+    let c<- b +4;
 	while a < 10 do
 	    let a <- b +1;
 	    if b > 3 then
-	        let a <- b+1;
+	        let a <- a+1;
 	    fi;
 	od;
 	call OutputNum(a);
 	call OutputNum(b);
+	call OutputNum(b+4);
 }.

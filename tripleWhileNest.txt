@@ -1,9 +1,9 @@
 main
 var a, b; {
-let a <- 1 + 1;
+let a <- call InputNum();
 let b <- a + 1;
 while a < 10 do
-let a<- 1 + 1;
+let a<- a + 1;
     while b<a do
     let b <- b+a;
         while b >3 do

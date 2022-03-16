@@ -65,7 +65,7 @@ public class InterferenceGraph {
                     if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                         liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
                     }
-                } else if (current.isCond && visite.get(current) == null) {
+                } else if (current.isCond && visite.get(current) == 2) {
                     if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
                         liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
                     }
@@ -248,7 +248,7 @@ public class InterferenceGraph {
                     if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                         liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
                     }
-                } else if (current.isCond && visite.get(current) == null) {
+                } else if (current.isCond && visite.get(current) == 2) {
                     if (visite.get(current.childBlocks.get(1)) == null) {
                         toVisit.add(current.childBlocks.get(1));
                         visite.put(current.childBlocks.get(1), 1);
@@ -454,6 +454,9 @@ public class InterferenceGraph {
             if (!noLive.contains(instruction.operator) && instruction.storeRegister == null) {
                 instruction.storeRegister = defaultRegister;
             }
+        }
+        for (Integer id : idInstructionMap.keySet()) {
+            Instruction instruction = idInstructionMap.get(id);
             if (instruction.operator == Operators.phi) {
                 resolvePhi(instruction);
             }
