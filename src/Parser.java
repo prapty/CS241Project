@@ -937,6 +937,10 @@ public class Parser {
         newBlock.condBlock = condBlock.condBlock;
         newBlock.isWhileBlock = condBlock.isWhileBlock;
 
+        Instruction empty = new Instruction(Operators.empty);
+        condBlock.instructions.add(0, empty);
+        condBlock.instructionIDs.add(empty.IDNum);
+
         Instruction firstInstr = newBlock.instructions.get(0);
         Operand ops = new Operand(false, 0, firstInstr.IDNum, -1);
         ops.returnVal = firstInstr;

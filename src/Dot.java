@@ -69,7 +69,6 @@ public class Dot {
                 break;
             }
         }
-
         String branchLine = "bb" + basicBlock.IDNum + ":s -> bb" + branchBlock.IDNum + ":n [label=\"branch\"];";
         branchLines.add(branchLine);
     }
@@ -99,22 +98,20 @@ public class Dot {
                 branchBRA(i, basicBlock, lines, branchLines);
             } else if (i == basicBlock.getLastInstruction() && i.operator.toString().charAt(0) != 'b') {
                 if (!basicBlock.childBlocks.isEmpty()) {
-                    for(int j=0; j<basicBlock.childBlocks.size(); j++){
+                    for (int j = 0; j < basicBlock.childBlocks.size(); j++) {
                         BasicBlock child = basicBlock.childBlocks.get(j);
-                        if(child.functionHead){
+                        if (child.functionHead) {
                             functionCall(basicBlock, child, lines, branchLines);
-                        }
-                        else{
+                        } else {
                             fallThrough(basicBlock, child, lines, branchLines);
                         }
                     }
 
                 }
             }
-            if(idInstructionMap!=null){
+            if (idInstructionMap != null) {
                 instrline += i.IDNum + ": " + i.toString(idInstructionMap) + "|";
-            }
-            else{
+            } else {
                 instrline += i.IDNum + ": " + i.toString() + "|";
             }
         }
