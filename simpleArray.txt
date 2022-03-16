@@ -1,7 +1,8 @@
 main
 var b, c; array[3] a; {
-let a[2] <- 1;
+let a[call InputNum()] <- call InputNum();
 let b <- a[2];
 let a[2] <- 3;
 let c <- a[2] + 2;
+call OutputNum(b);
 }.
