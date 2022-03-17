@@ -48,9 +48,9 @@ public class InterferenceGraph {
                     if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
                         liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
                     }
-                    Function f = irTree.headToFunc.get(current.childBlocks.get(0).IDNum);
-                    InterferenceGraph functionIG = new InterferenceGraph(f.irTree);
-                    functionsInterferenceGraph.putIfAbsent(f, functionIG);
+//                    Function f = irTree.headToFunc.get(current.childBlocks.get(0).IDNum);
+//                    InterferenceGraph functionIG = new InterferenceGraph(f.irTree);
+//                    functionsInterferenceGraph.putIfAbsent(f, functionIG);
                 }
                 else {
                     if (current.ifDiamond == IfDiamond.ifBlock) {

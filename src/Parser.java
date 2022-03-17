@@ -6,6 +6,7 @@ public class Parser {
     Token token;
     Set<Integer> visitedBlocks;
     Map<Integer, Function> functionInfo;
+    Map<Integer, IntermediateTree>intermediateTreeMap;
 
     public Parser(String fileName) throws IOException, SyntaxException {
         this.lexer = new Lexer(fileName);
@@ -13,12 +14,14 @@ public class Parser {
 
         visitedBlocks = new HashSet<>();
         functionInfo = new HashMap<>();
+        intermediateTreeMap = new HashMap<>();
     }
 
-    IntermediateTree getIntermediateRepresentation() throws SyntaxException, IOException {
+    Map<Integer, IntermediateTree>getIntermediateRepresentation() throws SyntaxException, IOException {
         IntermediateTree intermediateTree = new IntermediateTree();
+        intermediateTreeMap.put(ReservedWords.mainDefaultId.ordinal(),intermediateTree);
         Computation(intermediateTree);
-        return intermediateTree;
+        return intermediateTreeMap;
     }
 
     public void Computation(IntermediateTree irTree) throws SyntaxException, IOException {
@@ -109,6 +112,7 @@ public class Parser {
             function = new Function(isVoid, identity);
         }
         functionInfo.put(identity, function);
+        intermediateTreeMap.put(identity, function.irTree);
         token = lexer.nextToken();
         if (token.kind == TokenKind.reservedSymbol && (token.id == ReservedWords.startingFirstBracketDefaultId.ordinal())) {
             formalParam(function);
@@ -528,7 +532,7 @@ public class Parser {
         Function function = functionInfo.get(token.id);
         boolean undeclared = false;
         if (function == null) {
-            if (!irTree.start.functionHead) {
+            if (!irTree.constants.functionHead) {
                 error(ErrorInfo.UNDECLARED_FUNCTION_PARSER_ERROR, "");
             } else {
                 undeclared = true;
@@ -537,6 +541,7 @@ public class Parser {
                 function.irTree.start.instructions.add(emptyInstr);
                 function.irTree.start.instructionIDs.add(emptyInstr.IDNum);
                 functionInfo.put(token.id, function);
+                intermediateTreeMap.put(token.id, function.irTree);
             }
         }
         if (fromStatement && !function.isVoid) {
