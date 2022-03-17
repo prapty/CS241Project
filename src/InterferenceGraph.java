@@ -42,7 +42,8 @@ public class InterferenceGraph {
             HashSet<Instruction> liveValues = new HashSet<>();
             HashSet<Instruction> thenValues = new HashSet<>();
             HashSet<Instruction> elseValues = new HashSet<>();
-            if (current.childBlocks!=null && current.childBlocks.size() > 0) {
+            if (current.childBlocks != null && current.childBlocks.size() > 0)
+            {
                 if (current.childBlocks.get(0).functionHead) {
                     if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
                         liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
@@ -51,78 +52,50 @@ public class InterferenceGraph {
                     InterferenceGraph functionIG = new InterferenceGraph(f.irTree);
                     functionsInterferenceGraph.putIfAbsent(f, functionIG);
                 }
-                else{
-                    if (current.ifDiamond==IfDiamond.ifBlock) {
+                else {
+                    if (current.ifDiamond == IfDiamond.ifBlock) {
                         if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                             liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
                         }
                         if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
                             liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
                         }
-                    }
-                    else if (current.ifDiamond == IfDiamond.thenBlock) {
+                    } else if (current.ifDiamond == IfDiamond.thenBlock) {
                         if (thenLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                             liveValues.addAll(thenLiveValues.get(current.childBlocks.get(0).IDNum));
                         }
                         if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                             liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
                         }
-                    }
-                    else if (current.ifDiamond == IfDiamond.elseBlock) {
+                    } else if (current.ifDiamond == IfDiamond.elseBlock) {
                         if (elseLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                             liveValues.addAll(elseLiveValues.get(current.childBlocks.get(0).IDNum));
                         }
                         if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                             liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
                         }
-                    }
-                } else if (current.isCond && visite.get(current) == 2) {
-                    if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
-                        liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
-                    }
-                } else if (current.childBlocks.get(0).functionHead) {
-                    if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
-                        liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
-                    }
-                    else {
+                    } else if (current.isCond && visite.get(current) == 2) {
+                        if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
+                            liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
+                        }
+                    } else {
                         BasicBlock child = current.childBlocks.get(0);
                         if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                             liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
                         }
-                        if(child.parentBlocks.size()>1){
+                        if (child.parentBlocks.size() > 1) {
                             //child is a join block
                             int parentIndex = child.parentBlocks.indexOf(current);
-                            if(parentIndex==0){
+                            if (parentIndex == 0) {
                                 //current is then block
                                 if (thenLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                                     liveValues.addAll(thenLiveValues.get(current.childBlocks.get(0).IDNum));
                                 }
-                            }
-                            else{
+                            } else {
                                 //current is else block
                                 if (elseLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                                     liveValues.addAll(elseLiveValues.get(current.childBlocks.get(0).IDNum));
                                 }
-                    Function f = irTree.headToFunc.get(current.childBlocks.get(0).IDNum);
-                    InterferenceGraph functionIG = new InterferenceGraph(f.irTree);
-                    functionsInterferenceGraph.putIfAbsent(f, functionIG);
-                } else {
-                    BasicBlock child = current.childBlocks.get(0);
-                    if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
-                        liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
-                    }
-                    if (child.parentBlocks.size() > 1) {
-                        //child is a join block
-                        int parentIndex = child.parentBlocks.indexOf(current);
-                        if (parentIndex == 0) {
-                            //current is then block
-                            if (thenLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
-                                liveValues.addAll(thenLiveValues.get(current.childBlocks.get(0).IDNum));
-                            }
-                        } else {
-                            //current is else block
-                            if (elseLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
-                                liveValues.addAll(elseLiveValues.get(current.childBlocks.get(0).IDNum));
                             }
                         }
                     }
@@ -204,7 +177,6 @@ public class InterferenceGraph {
         updateCost(graph);
         return graph;
     }
-
 
     public HashMap<Instruction, GraphNode> getFunctionGraph(Function f) {
         HashMap<Instruction, GraphNode> graph = new HashMap<>();
