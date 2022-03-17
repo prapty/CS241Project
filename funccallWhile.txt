@@ -13,4 +13,5 @@ function test(b);
     while call test(1) + call test(2) < call test(0) do
         let rua2 <- call InputNum();
     od;
+    call OutputNum(rua2);
 }.

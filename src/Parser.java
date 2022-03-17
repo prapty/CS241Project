@@ -908,7 +908,7 @@ public class Parser {
                 tempCondTwo.isCond = true;
                 tempCondTwo.nested = condBlock.nested;
                 tempCondTwo.condBlock = condBlock;
-                temp.condBlock = tempCond;
+//                temp.condBlock = tempCond;
                 temp = tempCondTwo;
 //                tempCondTwo = tempCond.parentBlocks.get(0);
 //                tempCondTwo.isCond = true;
@@ -930,7 +930,7 @@ public class Parser {
         whileBlock.arrayMap.putAll(irTree.current.arrayMap);
         whileBlock.parentBlocks.add(irTree.current);
         whileBlock.isWhileBlock = true;
-        whileBlock.condBlock = tempCond;
+        whileBlock.condBlock = condBlock;
         whileBlock.nested = condBlock.nested;
 
         irTree.current.childBlocks.add(whileBlock);
