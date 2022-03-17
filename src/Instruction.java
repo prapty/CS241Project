@@ -103,7 +103,7 @@ public class Instruction {
     }
 
     public String toString(Map<Integer, Instruction>idInstructionMap) {
-        List<Operators> noChange = new ArrayList<>(Arrays.asList(Operators.bra, Operators.bne, Operators.beq, Operators.ble, Operators.blt, Operators.bge, Operators.bgt, Operators.kill, Operators.jsr));
+        List<Operators> noChange = new ArrayList<>(Arrays.asList(Operators.bra, Operators.bne, Operators.beq, Operators.ble, Operators.blt, Operators.bge, Operators.bgt, Operators.kill, Operators.call));
 
         String ts = operator.toString();
         if (firstOp != null) {

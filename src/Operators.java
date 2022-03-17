@@ -11,7 +11,7 @@ public enum Operators {
     read,
     write,
     writeNL,
-    empty,
+    nop,
     store,
     phi,
     end,
@@ -27,7 +27,7 @@ public enum Operators {
     pop,
     pushUsedRegisters,
     popUsedRegisters,
-    jsr,
+    call,
     ret,
     move
 }

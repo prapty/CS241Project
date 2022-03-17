@@ -533,7 +533,7 @@ public class Parser {
             } else {
                 undeclared = true;
                 function = new Function(fromStatement, token.id);
-                Instruction emptyInstr = new Instruction(Operators.empty);
+                Instruction emptyInstr = new Instruction(Operators.nop);
                 function.irTree.start.instructions.add(emptyInstr);
                 function.irTree.start.instructionIDs.add(emptyInstr.IDNum);
                 functionInfo.put(token.id, function);
@@ -611,14 +611,12 @@ public class Parser {
         }
         //insert special call instruction
         Operand destination;
-        destination = new Operand(false, 0, functionIrTree.start.instructions.get(0).IDNum, -1);
-        destination.returnVal = functionIrTree.start.instructions.get(0);
-        Instruction callInstruction = new Instruction(Operators.jsr, destination);
+        destination = new Operand(false, 0, functionIrTree.constants.instructions.get(0).IDNum, -1);
+        Instruction callInstruction = new Instruction(Operators.call, destination);
         callInstruction.arguments = argumentList;
         irTree.current.instructions.add(callInstruction);
         irTree.current.instructionIDs.add(callInstruction.IDNum);
-        //functions with no parameters. Can directly add IrTree of the function to the current block
-
+        //add IrTree of the function to the current block
         functionIrTree.constants.parentBlocks.add(irTree.current);
         irTree.current.childBlocks.add(functionIrTree.constants);
         irTree.headToFunc.put(functionIrTree.constants.IDNum, function);
@@ -646,18 +644,26 @@ public class Parser {
         newBlock.condBlock = irTree.current.condBlock;
 
         irTree.current = newBlock;
+        //pop register values
+        popRegisterOperation(irTree);
+        if (token.id == ReservedWords.endingFirstBracketDefaultId.ordinal()) {
+            token = lexer.nextToken();
+        }
         //pop returned value
         if (!function.isVoid) {
             Operand spOp = new Operand(Registers.SP.name());
-            Instruction returnValInstr = popOperation(irTree, spOp, 4);
-            returnValInstr.storeRegister = Registers.RV.name();
+            Instruction popValInstr = popOperation(irTree, spOp, 4);
+            popValInstr.storeRegister = Registers.RV.name();
+            //add zero to transfer return value to a normal register
+            Operand rvOp = new Operand(Registers.RV.name());
+            Operand zeroOp = new Operand(true, 0, null, -1);
+            Instruction zeroOpInstr = new Instruction(Operators.constant, zeroOp, zeroOp);
+            zeroOp = constantDuplicate(irTree, zeroOp, zeroOpInstr);
+            Instruction returnValInstr = new Instruction(Operators.add, rvOp, zeroOp);
+            irTree.current.instructions.add(returnValInstr);
+            irTree.current.instructionIDs.add(returnValInstr.IDNum);
             returnValue.valGenerator = returnValInstr.IDNum;
             returnValue.returnVal = returnValInstr;
-        }
-        //pop register values
-        popRegisterOperation(irTree);
-        if (token.id != ReservedWords.semicolonDefaultId.ordinal()) {
-            token = lexer.nextToken();
         }
         return returnValue;
     }
@@ -727,7 +733,7 @@ public class Parser {
         joinBlock.condBlock = parentBlock.condBlock;
         joinBlock.IDNum = 0;
         joinBlock.ifDiamond = IfDiamond.joinBlock;
-        Instruction empty = new Instruction(Operators.empty);
+        Instruction empty = new Instruction(Operators.nop);
         joinBlock.instructions.add(empty);
         joinBlock.instructionIDs.add(empty.IDNum);
         BasicBlock.instrNum--;
@@ -742,7 +748,7 @@ public class Parser {
             parentBlock.childBlocks.add(thenBlock);
             thenBlock.dominatorBlock = parentBlock;
             irTree.current = thenBlock;
-            Instruction emptyInstr = new Instruction(Operators.empty);
+            Instruction emptyInstr = new Instruction(Operators.nop);
             thenBlock.instructions.add(emptyInstr);
             thenBlock.instructionIDs.add(emptyInstr.IDNum);
             statSequence(irTree);
@@ -755,7 +761,7 @@ public class Parser {
                 joinBlock.arrayMap.putAll(irTree.current.arrayMap);
             }
             if (thenBlock.instructions.isEmpty()) {
-                emptyInstr = new Instruction(Operators.empty);
+                emptyInstr = new Instruction(Operators.nop);
                 thenBlock.instructions.add(emptyInstr);
                 thenBlock.instructionIDs.add(emptyInstr.IDNum);
             }
@@ -775,7 +781,7 @@ public class Parser {
             elseBlock.parentBlocks.add(parentBlock);
             parentBlock.childBlocks.add(elseBlock);
             irTree.current = elseBlock;
-            Instruction emptyElse = new Instruction(Operators.empty);
+            Instruction emptyElse = new Instruction(Operators.nop);
             irTree.current.instructions.add(emptyElse);
             irTree.current.instructionIDs.add(emptyElse.IDNum);
             statSequence(irTree);
@@ -798,7 +804,7 @@ public class Parser {
             joinBlock.arrayMap.putAll(irTree.current.arrayMap);
         }
         if (elseBlock.instructions.isEmpty()) {
-            Instruction emptyInstr = new Instruction(Operators.empty);
+            Instruction emptyInstr = new Instruction(Operators.nop);
             elseBlock.instructions.add(emptyInstr);
             elseBlock.instructionIDs.add(emptyInstr.IDNum);
         }
@@ -837,7 +843,7 @@ public class Parser {
             if (joinBlock.parentBlocks.size() > 0) {
                 irTree.current = joinBlock;
                 if (joinBlock.instructions.isEmpty()) {
-                    Instruction emptyInstr = new Instruction(Operators.empty);
+                    Instruction emptyInstr = new Instruction(Operators.nop);
                     joinBlock.instructions.add(emptyInstr);
                     joinBlock.instructionIDs.add(emptyInstr.IDNum);
                 }
@@ -861,7 +867,7 @@ public class Parser {
     private void whileStatement(IntermediateTree irTree) throws SyntaxException, IOException {
         BasicBlock condBlock = new BasicBlock();
         if (irTree.current.instructions.isEmpty()) {
-            irTree.current.instructions.add(new Instruction(Operators.empty));
+            irTree.current.instructions.add(new Instruction(Operators.nop));
         }
         condBlock.valueInstructionMap.putAll(irTree.current.valueInstructionMap);
         condBlock.dominatorTree = irTree.current.dominatorTree.clone();
@@ -928,7 +934,7 @@ public class Parser {
         token = lexer.nextToken();
 
         if (newBlock.instructions.isEmpty()) {
-            Instruction emptyInstr = new Instruction(Operators.empty);
+            Instruction emptyInstr = new Instruction(Operators.nop);
             newBlock.instructions.add(emptyInstr);
             newBlock.instructionIDs.add(emptyInstr.IDNum);
         }
@@ -937,7 +943,7 @@ public class Parser {
         newBlock.condBlock = condBlock.condBlock;
         newBlock.isWhileBlock = condBlock.isWhileBlock;
 
-        Instruction empty = new Instruction(Operators.empty);
+        Instruction empty = new Instruction(Operators.nop);
         condBlock.instructions.add(0, empty);
         condBlock.instructionIDs.add(empty.IDNum);
 
@@ -1379,10 +1385,11 @@ public class Parser {
 
     private Operand Factor(IntermediateTree irTree) throws SyntaxException, IOException {
         Operand result = new Operand();
-
+        boolean negation = false;
         //negation
         if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.minusDefaultId.ordinal()) {
             token = lexer.nextToken();
+            negation = true;
             if (token.kind == TokenKind.number) {
                 result = new Operand(true, token.val, null, -1);
                 Instruction constantInstruction = new Instruction(Operators.constant, result, result);
@@ -1419,22 +1426,54 @@ public class Parser {
                     irTree.current.instructions.add(negInstr);
                     irTree.current.instructionIDs.add(negInstr.IDNum);
                 }
-            } else if (token.kind == TokenKind.identity) {
+                token = lexer.nextToken();
+            }
+            else if (token.kind == TokenKind.identity) {
+                //identity
+                Token ident = token;
                 if (!irTree.current.declaredVariables.contains(token.id)) {
                     error(ErrorInfo.UNDECLARED_VARIABLE_PARSER_ERROR, "");
                 }
-                Instruction valueGenerator = irTree.current.valueInstructionMap.get(token.id);
-                if (valueGenerator == null) {
-                    warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);
-                    valueGenerator = irTree.assignZeroInstruction;
+
+                token = lexer.nextToken();
+                Instruction loadInstr = null;
+                if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingThirdBracketDefaultId.ordinal()) {
+                    Operand load = arrayDesignator(irTree, ident);
+                    loadInstr = new Instruction(Operators.load, load);
+                    loadInstr.arrayID = ident.id;
+
+                    result = new Operand(false, -1, loadInstr.IDNum, -1);
+                    result.returnVal = loadInstr;
+//                    irTree.current.instructions.add(loadInstr); //check
+                    Instruction duplicate = getDuplicateInstructionLoad(irTree.current.dominatorTree[Operators.load.ordinal()], loadInstr);
+                    boolean allowdupl = (irTree.current.isCond || irTree.current.isWhileBlock);
+                    if (duplicate != null && !allowdupl) {
+                        result.valGenerator = duplicate.IDNum;
+                        result.returnVal = duplicate;
+                        Instruction.instrNum--;
+                    } else {
+                        InstructionLinkedList node = new InstructionLinkedList();
+                        node.value = loadInstr;
+                        node.previous = irTree.current.dominatorTree[Operators.load.ordinal()];
+                        irTree.current.dominatorTree[Operators.load.ordinal()] = node;
+                        irTree.current.instructions.add(loadInstr);
+                        irTree.current.instructionIDs.add(loadInstr.IDNum);
+                    }
                 }
-                result = new Operand(false, 0, valueGenerator.IDNum, token.id);
-                result.returnVal = valueGenerator;
+                if (loadInstr == null) {
+                    Instruction valueGenerator = irTree.current.valueInstructionMap.get(ident.id);
+                    if (valueGenerator == null) {
+                        warning(ErrorInfo.UNINITIALIZED_VARIABLE_PARSER_WARNING);
+                        valueGenerator = irTree.assignZeroInstruction;
+                    }
+                    result = new Operand(false, 0, valueGenerator.IDNum, ident.id);
+                    result.returnVal = valueGenerator;
+                }
                 Instruction negInstr = new Instruction(Operators.neg, result);
                 result = new Operand(false, 0, negInstr.IDNum, token.id);
                 result.returnVal = negInstr;
                 Instruction duplicate = getDuplicateInstructionSingleOp(irTree.current.dominatorTree[Operators.neg.ordinal()], negInstr);
-                boolean allowdupl = (irTree.current.isCond || irTree.current.isWhileBlock) && (!negInstr.firstOp.constant);
+                boolean allowdupl = (irTree.current.isCond || irTree.current.isWhileBlock) && (!negInstr.firstOp.constant && loadInstr==null);
                 if (duplicate != null && !allowdupl) {
                     result.valGenerator = duplicate.IDNum;
                     result.returnVal = duplicate;
@@ -1448,7 +1487,11 @@ public class Parser {
                     irTree.current.instructions.add(negInstr);
                     irTree.current.instructionIDs.add(negInstr.IDNum);
                 }
-            } else if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
+                if(token.id==ReservedWords.endingThirdBracketDefaultId.ordinal()){
+                    token = lexer.nextToken();
+                }
+            }
+            else if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
                 token = lexer.nextToken();
                 result = Expression(irTree);
                 Instruction negInstr = new Instruction(Operators.neg, result);
@@ -1468,10 +1511,28 @@ public class Parser {
                     irTree.current.instructions.add(negInstr);
                     irTree.current.instructionIDs.add(negInstr.IDNum);
                 }
+                if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.endingFirstBracketDefaultId.ordinal()) {
+                    //end expression
+                    token = lexer.nextToken();
+                } else {
+                    error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, ")");
+                }
+            }
+            else if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.callDefaultId.ordinal()) {
+                token = lexer.nextToken();
+                result = funcCall(irTree, false);
+                Instruction negInstr = new Instruction(Operators.neg, result);
+                result = new Operand(false, 0, negInstr.IDNum, token.id);
+                result.returnVal = negInstr;
+                irTree.current.instructions.add(negInstr);
+                irTree.current.instructionIDs.add(negInstr.IDNum);
+                if (token.id == ReservedWords.endingFirstBracketDefaultId.ordinal()) {
+                    token = lexer.nextToken();
+                }
             }
         }
 
-        if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
+        if (!negation && (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingFirstBracketDefaultId.ordinal())) {
             token = lexer.nextToken();
             result = Expression(irTree);
             if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.endingFirstBracketDefaultId.ordinal()) {
@@ -1480,8 +1541,8 @@ public class Parser {
             } else {
                 error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, ")");
             }
-
-        } else if (token.kind == TokenKind.identity || token.kind == TokenKind.number) {
+        }
+        else if (!negation && (token.kind == TokenKind.identity || token.kind == TokenKind.number)) {
             Token ident = token;
             if (token.kind == TokenKind.identity) {
                 //identity
@@ -1551,11 +1612,11 @@ public class Parser {
                 }
                 token = lexer.nextToken();
             }
-
-        } else if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.callDefaultId.ordinal()) {
+        }
+        else if (!negation && (token.kind == TokenKind.reservedWord && token.id == ReservedWords.callDefaultId.ordinal())) {
             token = lexer.nextToken();
             result = funcCall(irTree, false);
-            if (token.id != ReservedWords.semicolonDefaultId.ordinal()) {
+            if (token.id == ReservedWords.endingFirstBracketDefaultId.ordinal()) {
                 token = lexer.nextToken();
             }
         }
