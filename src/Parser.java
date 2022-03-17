@@ -975,10 +975,12 @@ public class Parser {
         condBlock.IDNum2 = newBlock.IDNum;
         tempCond.IDNum2 = condBlock.IDNum2;
         tempCondTwo = tempCond.parentBlocks.get(0);
-        if (tempCondTwo != null) {
-            while (tempCondTwo != condBlock) {
-                tempCondTwo.IDNum2 = condBlock.IDNum2;
-                tempCondTwo = tempCondTwo.parentBlocks.get(0);
+        if (tempCond != condBlock) {
+            if (tempCondTwo != null) {
+                while (tempCondTwo != condBlock) {
+                    tempCondTwo.IDNum2 = condBlock.IDNum2;
+                    tempCondTwo = tempCondTwo.parentBlocks.get(0);
+                }
             }
         }
 
