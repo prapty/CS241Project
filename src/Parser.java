@@ -499,7 +499,12 @@ public class Parser {
                 }
             }
         }
-        toVisit.add(condd.childBlocks.get(0));
+        for(BasicBlock b: condd.childBlocks){
+            if(!b.functionHead){
+                toVisit.add(b);
+            }
+        }
+        //toVisit.add(condd.childBlocks.get(0));
         while (!toVisit.isEmpty()) {
             BasicBlock current = toVisit.poll();
             visited.add(current);
@@ -511,6 +516,15 @@ public class Parser {
                 if (i.secondOp != null && i.secondOp.valGenerator == phi.firstOp.valGenerator && !i.secondOp.constant && i.secondOp.id == phi.firstOp.id) {
                     i.secondOp.valGenerator = phi.IDNum;
                     i.secondOp.returnVal = phi;
+                }
+            }
+            //update valueInstructionMap for unchanged values
+            for(int id: current.valueInstructionMap.keySet()){
+                if(id==phi.firstOp.id){
+                    Instruction valInstr = current.valueInstructionMap.get(id);
+                    if(valInstr.IDNum==phi.firstOp.valGenerator){
+                        current.valueInstructionMap.put(id, phi);
+                    }
                 }
             }
             for (BasicBlock child : current.childBlocks) {

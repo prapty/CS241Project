@@ -43,7 +43,7 @@ public class InterferenceGraph {
                 current.regAllVis++;
             }
 
-            System.out.println(current.IDNum);
+            //System.out.println(current.IDNum);
 //            System.out.println(current.isCond);
 //            if (current.childBlocks.size() > 1 && current.childBlocks.get(1) != null) {
 //                System.out.println(current.childBlocks.get(1).IDNum + "child");
