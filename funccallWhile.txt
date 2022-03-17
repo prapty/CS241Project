@@ -1,5 +1,5 @@
 main
-var rua2;
+var rua2, b, c;
 function test(b);
 {
     while b > 0 do
@@ -7,5 +7,12 @@ function test(b);
     od;
 };
 {
-    call OutputNum(call test(0));
+    let rua2 <- call InputNum();
+    let b <- rua2 +1;
+    let c <- b;
+    while call test(0) < b+1 do
+        let rua2 <- call InputNum();
+        let c <- b + 1;
+    od;
+    call OutputNum(c);
 }.
