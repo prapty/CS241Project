@@ -948,6 +948,8 @@ public class Parser {
         newBlock.condBlock = condBlock.condBlock;
         newBlock.isWhileBlock = condBlock.isWhileBlock;
 
+        condBlock.IDNum2 = newBlock.IDNum;
+
         Instruction empty = new Instruction(Operators.nop);
         condBlock.instructions.add(0, empty);
         condBlock.instructionIDs.add(empty.IDNum);

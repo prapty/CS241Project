@@ -2,6 +2,7 @@ import java.util.*;
 
 public class BasicBlock {
     int IDNum;
+    int IDNum2;
     static int instrNum = 1;
     Integer functionIdentity;
     List<Instruction> instructions;
@@ -30,6 +31,7 @@ public class BasicBlock {
     boolean functionHead;
     boolean retAdded;
     BasicBlock dominatorBlock;
+    BasicBlock originalB;
 
     public BasicBlock() {
         IDNum = instrNum;
@@ -49,6 +51,33 @@ public class BasicBlock {
         dominatorBlock = null;
         arrayMap = new HashMap<>();
         ifDiamond = null;
+        IDNum2 = 0;
+        originalB = null;
+    }
+
+    public BasicBlock(BasicBlock block){
+        this.IDNum = block.IDNum;
+        this.IDNum2 = block.IDNum2;
+        this.functionIdentity = block.functionIdentity;
+        this.isCond = block.isCond;
+        this.instructions = block.instructions;
+        this.instructionIDs = block.instructionIDs;
+        this.retAdded = block.retAdded;
+        this.childBlocks = block.childBlocks;
+        this.parentBlocks = block.parentBlocks;
+        this.isWhileBlock = block.isWhileBlock;
+        this.functionHead = block.functionHead;
+        this.nested = block.nested;
+        this.condBlock = block.condBlock;
+        this.assignedVariables = block.assignedVariables;
+        this.valueInstructionMap = block.valueInstructionMap;
+        this.arrayMap = block.arrayMap;
+        this.dominatorBlock = block.dominatorBlock;
+        this.dominatorTree = block.dominatorTree;
+        this.declaredVariables = block.declaredVariables;
+        this.ifDiamond = block.ifDiamond;
+        this.nestedBlock = block.nestedBlock;
+        originalB = block;
     }
 
     Instruction getLastInstruction() {

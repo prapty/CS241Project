@@ -35,19 +35,21 @@ public class InterferenceGraph {
         HashMap<Integer, HashSet<Instruction>> thenLiveValues = new HashMap<>();
         HashMap<Integer, HashSet<Instruction>> elseLiveValues = new HashMap<>();
         blockLiveValues.put(current.IDNum, new HashSet<>());
-        while (current!=null) {
+        while (current != null) {
+            if (current.originalB != null) {
+                current = current.originalB;
+            }
+            System.out.println(current.IDNum + " " + current.IDNum2);
             idBlockMap.put(current.IDNum, current);
             HashSet<Instruction> liveValues = new HashSet<>();
             HashSet<Instruction> thenValues = new HashSet<>();
             HashSet<Instruction> elseValues = new HashSet<>();
-            if (current.childBlocks != null && current.childBlocks.size() > 0)
-            {
+            if (current.childBlocks != null && current.childBlocks.size() > 0) {
                 if (current.childBlocks.get(0).functionHead) {
                     if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
                         liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
                     }
-                }
-                else {
+                } else {
                     if (current.ifDiamond == IfDiamond.ifBlock) {
                         if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                             liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
@@ -69,7 +71,7 @@ public class InterferenceGraph {
                         if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                             liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
                         }
-                    } else if (current.isCond && visite.get(current) == 2) {
+                    } else if (current.isCond && visite.get(current) == 1) {
                         if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
                             liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
                         }
@@ -98,7 +100,7 @@ public class InterferenceGraph {
             }
             for (int i = current.instructions.size() - 1; i >= 0; i--) {
                 Instruction currInstr = current.instructions.get(i);
-                if(currInstr.operator==Operators.ret){
+                if (currInstr.operator == Operators.ret) {
                     liveValues.clear();
                 }
                 idInstructionMap.put(currInstr.IDNum, currInstr);
@@ -171,13 +173,23 @@ public class InterferenceGraph {
         return graph;
     }
 
-    private PriorityQueue<BasicBlock>getBlocks(PriorityQueue<BasicBlock> blockList, BasicBlock block, HashMap<BasicBlock, Integer> visite){
-        blockList.add(block);
-        if(block.childBlocks==null||block.childBlocks.size()==0){
+    private PriorityQueue<BasicBlock> getBlocks(PriorityQueue<BasicBlock> blockList, BasicBlock block, HashMap<BasicBlock, Integer> visite) {
+        if (block.isCond && visite.get(block) == 1) {
+            BasicBlock cBlock = new BasicBlock(block);
+            cBlock.IDNum = block.IDNum2;
+            cBlock.IDNum2 = 222;
+            blockList.add(cBlock);
+            visite.put(cBlock, 1);
+        } else {
+            blockList.add(block);
+        }
+
+
+        if (block.childBlocks == null || block.childBlocks.size() == 0) {
             return blockList;
         }
-        for(BasicBlock b:block.childBlocks){
-            if(!b.functionHead){
+        for (BasicBlock b : block.childBlocks) {
+            if (!b.functionHead) {
                 if (!visited(b, visite)) {
                     getBlocks(blockList, b, visite);
                 }
