@@ -982,6 +982,9 @@ public class Parser {
             }
         }
 
+        newBlock.dominatorBlock = tempCond;
+        whileBlock.dominatorBlock = tempCond;
+
         Instruction empty = new Instruction(Operators.nop);
         condBlock.instructions.add(0, empty);
         condBlock.instructionIDs.add(empty.IDNum);
