@@ -5,8 +5,8 @@ function IsEven(n); {
 	return 1;
 };
 function IsOdd(n); {
-	if n < 0 then return call IsEven(0 - n - 1); fi;
-	if n > 0 then return call IsEven(n - 1); fi;
+	if n < 0 then return 0; fi;
+	if n > 0 then return -1; fi;
 	return 0;
 };
 {

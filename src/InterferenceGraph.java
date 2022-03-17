@@ -24,20 +24,18 @@ public class InterferenceGraph {
 
     public HashMap<Instruction, GraphNode> getGraph() {
         HashMap<Instruction, GraphNode> graph = new HashMap<>();
-        BasicBlock current = irTree.current;
-
+        HashMap<BasicBlock, Integer> visite = new HashMap<>();
+        visite.put(irTree.constants, 1);
         Comparator<BasicBlock> comparator = new BasicBlockComparator();
         PriorityQueue<BasicBlock> toVisit = new PriorityQueue<>(comparator);
-        HashMap<BasicBlock, Integer> visite = new HashMap<>();
-        visite.put(current, 1);
+        toVisit = getBlocks(toVisit, irTree.constants, visite);
+        BasicBlock current = toVisit.poll();
         idBlockMap.put(current.IDNum, current);
         HashMap<Integer, HashSet<Instruction>> blockLiveValues = new HashMap<>(); //live values at end of block i, for if functions
         HashMap<Integer, HashSet<Instruction>> thenLiveValues = new HashMap<>();
         HashMap<Integer, HashSet<Instruction>> elseLiveValues = new HashMap<>();
         blockLiveValues.put(current.IDNum, new HashSet<>());
-
-        // while (current != irTree.constants) {
-        while (current != null) {
+        while (current!=null) {
             idBlockMap.put(current.IDNum, current);
             HashSet<Instruction> liveValues = new HashSet<>();
             HashSet<Instruction> thenValues = new HashSet<>();
@@ -48,9 +46,6 @@ public class InterferenceGraph {
                     if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
                         liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
                     }
-//                    Function f = irTree.headToFunc.get(current.childBlocks.get(0).IDNum);
-//                    InterferenceGraph functionIG = new InterferenceGraph(f.irTree);
-//                    functionsInterferenceGraph.putIfAbsent(f, functionIG);
                 }
                 else {
                     if (current.ifDiamond == IfDiamond.ifBlock) {
@@ -103,6 +98,9 @@ public class InterferenceGraph {
             }
             for (int i = current.instructions.size() - 1; i >= 0; i--) {
                 Instruction currInstr = current.instructions.get(i);
+                if(currInstr.operator==Operators.ret){
+                    liveValues.clear();
+                }
                 idInstructionMap.put(currInstr.IDNum, currInstr);
                 liveValues.remove(currInstr);
                 thenValues.remove(currInstr);
@@ -167,189 +165,25 @@ public class InterferenceGraph {
             blockLiveValues.put(current.IDNum, blockLives);
             thenLiveValues.put(current.IDNum, thenValues);
             elseLiveValues.put(current.IDNum, elseValues);
-            for (BasicBlock b : current.parentBlocks) {
-                if (!visited(b, visite)) {
-                    toVisit.add(b);
-                }
-            }
             current = toVisit.poll();
         }
         updateCost(graph);
         return graph;
     }
 
-    public HashMap<Instruction, GraphNode> getFunctionGraph(Function f) {
-        HashMap<Instruction, GraphNode> graph = new HashMap<>();
-        BasicBlock current = f.irTree.current;
-
-        Comparator<BasicBlock> comparator = new BasicBlockComparator();
-        PriorityQueue<BasicBlock> toVisit = new PriorityQueue<>(comparator);
-        HashMap<BasicBlock, Integer> visite = new HashMap<>();
-        visite.put(current, 1);
-        idBlockMap.put(current.IDNum, current);
-        HashMap<Integer, HashSet<Instruction>> blockLiveValues = new HashMap<>(); //live values at end of block i, for if functions
-        HashMap<Integer, HashSet<Instruction>> thenLiveValues = new HashMap<>();
-        HashMap<Integer, HashSet<Instruction>> elseLiveValues = new HashMap<>();
-        blockLiveValues.put(current.IDNum, new HashSet<>());
-
-        int maxIDblockNum = f.irTree.current.IDNum;
-
-        while (current.IDNum >= f.irTree.constants.IDNum && current.IDNum <= maxIDblockNum) {
-            HashSet<Instruction> liveValues = new HashSet<>();
-            HashSet<Instruction> thenValues = new HashSet<>();
-            HashSet<Instruction> elseValues = new HashSet<>();
-            if (current.childBlocks.size() > 0) {
-                if (current.ifDiamond == IfDiamond.ifBlock) {
-                    if (visite.get(current.childBlocks.get(0)) == null) {
-                        toVisit.add(current.childBlocks.get(0));
-                        visite.put(current.childBlocks.get(0), 1);
-                        toVisit.add(current);
-                        current = toVisit.poll();
-                        continue;
-                    }
-                    if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
-                        liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
-                    }
-                    if (visite.get(current.childBlocks.get(1)) == null) {
-                        toVisit.add(current.childBlocks.get(1));
-                        visite.put(current.childBlocks.get(1), 1);
-                        toVisit.add(current);
-                        current = toVisit.poll();
-                        continue;
-                    }
-                    if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
-                        liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
-                    }
-                } else if (current.ifDiamond == IfDiamond.thenBlock) {
-                    if (visite.get(current.childBlocks.get(0)) == null) {
-                        toVisit.add(current.childBlocks.get(0));
-                        visite.put(current.childBlocks.get(0), 1);
-                        toVisit.add(current);
-                        current = toVisit.poll();
-                        continue;
-                    }
-                    if (thenLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
-                        liveValues.addAll(thenLiveValues.get(current.childBlocks.get(0).IDNum));
-                    }
-                    if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
-                        liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
-                    }
-                } else if (current.ifDiamond == IfDiamond.elseBlock) {
-                    if (visite.get(current.childBlocks.get(0)) == null) {
-                        toVisit.add(current.childBlocks.get(0));
-                        visite.put(current.childBlocks.get(0), 1);
-                        toVisit.add(current);
-                        current = toVisit.poll();
-                        continue;
-                    }
-                    if (elseLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
-                        liveValues.addAll(elseLiveValues.get(current.childBlocks.get(0).IDNum));
-                    }
-                    if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
-                        liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
-                    }
-                } else if (current.isCond && visite.get(current) == 1) {
-                    if (visite.get(current.childBlocks.get(1)) == null) {
-                        toVisit.add(current.childBlocks.get(1));
-                        visite.put(current.childBlocks.get(1), 1);
-                        toVisit.add(current);
-                        current = toVisit.poll();
-                        continue;
-                    }
-                    if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
-                        liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
-                    }
-                } else if (current.childBlocks.get(0).functionHead) {
-                    if (visite.get(current.childBlocks.get(1)) == null) {
-                        toVisit.add(current.childBlocks.get(1));
-                        visite.put(current.childBlocks.get(1), 1);
-                        toVisit.add(current);
-                        current = toVisit.poll();
-                        continue;
-                    }
-                    if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
-                        liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
-                    }
-                    Function fc = irTree.headToFunc.get(current.childBlocks.get(0).IDNum);
-                    InterferenceGraph functionIG = new InterferenceGraph(fc.irTree);
-                    functionsInterferenceGraph.putIfAbsent(fc, functionIG);
-                } else {
-                    if (visite.get(current.childBlocks.get(0)) == null) {
-                        toVisit.add(current.childBlocks.get(0));
-                        visite.put(current.childBlocks.get(0), 1);
-                        toVisit.add(current);
-                        current = toVisit.poll();
-                        continue;
-                    }
-                    if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
-                        liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
-                    }
-                }
-            }
-            for (int i = current.instructions.size() - 1; i >= 0; i--) {
-                Instruction currInstr = current.instructions.get(i);
-                idInstructionMap.put(currInstr.IDNum, currInstr);
-                liveValues.remove(currInstr);
-
-                boolean live = true;
-                if (noLive.contains(currInstr.operator)) {
-                    live = false;
-                }
-                if (live) {
-                    for (Instruction j : liveValues) {
-                        if (j != null) {
-                            createEdge(graph, j, currInstr);
-                        }
-                    }
-                }
-                if (currInstr.firstOp != null && currInstr.firstOp.returnVal != null && currInstr.operator.toString().charAt(0) != 'b') {
-                    if (current.isCond) {
-                        currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested - 1);
-                    } else {
-                        currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested);
-                    }
-                    if (currInstr.operator == Operators.phi) {
-                        thenValues.add(currInstr.firstOp.returnVal);
-                    } else {
-                        liveValues.add(currInstr.firstOp.returnVal);
-                    }
-                }
-                if (currInstr.secondOp != null && currInstr.secondOp.returnVal != null && currInstr.operator.toString().charAt(0) != 'b') {
-                    if (current.isCond) {
-                        currInstr.secondOp.returnVal.cost += Math.pow(10, current.nested - 1);
-                    } else {
-                        currInstr.secondOp.returnVal.cost += Math.pow(10, current.nested);
-                    }
-                    if (currInstr.operator == Operators.phi) {
-                        elseValues.add(currInstr.secondOp.returnVal);
-                    } else {
-                        liveValues.add(currInstr.secondOp.returnVal);
-                    }
-                }
-                if (currInstr.thirdOp != null && currInstr.thirdOp.returnVal != null && currInstr.operator.toString().charAt(0) != 'b') {
-                    if (current.isCond) {
-                        currInstr.thirdOp.returnVal.cost += Math.pow(10, current.nested - 1);
-                    } else {
-                        currInstr.thirdOp.returnVal.cost += Math.pow(10, current.nested);
-                    }
-                    liveValues.add(currInstr.thirdOp.returnVal);
-                }
-            }
-            HashSet<Instruction> blockLives = new HashSet<>();
-            blockLives.addAll(liveValues);
-            blockLiveValues.put(current.IDNum, blockLives);
-            thenLiveValues.put(current.IDNum, thenValues);
-            elseLiveValues.put(current.IDNum, elseValues);
-            for (BasicBlock b : current.parentBlocks) {
-                if (!visited(b, visite)) {
-                    toVisit.add(b);
-                }
-            }
-            current = toVisit.poll();
+    private PriorityQueue<BasicBlock>getBlocks(PriorityQueue<BasicBlock> blockList, BasicBlock block, HashMap<BasicBlock, Integer> visite){
+        blockList.add(block);
+        if(block.childBlocks==null||block.childBlocks.size()==0){
+            return blockList;
         }
-
-        updateCost(graph);
-        return graph;
+        for(BasicBlock b:block.childBlocks){
+            if(!b.functionHead){
+                if (!visited(b, visite)) {
+                    getBlocks(blockList, b, visite);
+                }
+            }
+        }
+        return blockList;
     }
 
     private void updateCost(HashMap<Instruction, GraphNode> graph) {
@@ -423,14 +257,6 @@ public class InterferenceGraph {
             } else {
                 node.instruction.storeRegister = registerNameNumMap.get(node.instruction.storeRegister);
             }
-        }
-        String coloredFileName = "unresolvedPhiDot.dot";
-        Dot coloredDot = new Dot(coloredFileName);
-        coloredDot.idInstructionMap = idInstructionMap;
-        try {
-            coloredDot.makeDotGraph(irTree);
-        } catch (IOException e) {
-            e.printStackTrace();
         }
         String defaultRegister = "R1";
         for (Integer id : idInstructionMap.keySet()) {
