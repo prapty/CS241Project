@@ -6,7 +6,7 @@ public class Parser {
     Token token;
     Set<Integer> visitedBlocks;
     Map<Integer, Function> functionInfo;
-    Map<Integer, IntermediateTree>intermediateTreeMap;
+    Map<Integer, IntermediateTree> intermediateTreeMap;
 
     public Parser(String fileName) throws IOException, SyntaxException {
         this.lexer = new Lexer(fileName);
@@ -17,9 +17,9 @@ public class Parser {
         intermediateTreeMap = new HashMap<>();
     }
 
-    Map<Integer, IntermediateTree>getIntermediateRepresentation() throws SyntaxException, IOException {
+    Map<Integer, IntermediateTree> getIntermediateRepresentation() throws SyntaxException, IOException {
         IntermediateTree intermediateTree = new IntermediateTree();
-        intermediateTreeMap.put(ReservedWords.mainDefaultId.ordinal(),intermediateTree);
+        intermediateTreeMap.put(ReservedWords.mainDefaultId.ordinal(), intermediateTree);
         Computation(intermediateTree);
         return intermediateTreeMap;
     }
@@ -257,7 +257,7 @@ public class Parser {
             irTree.current.instructionIDs.add(subSPInstruction.IDNum);
         }
 
-        if(function.parameters.size()>0){
+        if (function.parameters.size() > 0) {
             //add 8 to fp to move it to the beginning of the last argument
             int offset = 8;
             Operand offsetOp = new Operand(true, offset, null, -1);
@@ -894,6 +894,29 @@ public class Parser {
         }
 
         relation(irTree);
+
+        BasicBlock tempCond = irTree.current;
+        tempCond.isCond = true;
+        tempCond.nested = condBlock.nested;
+        tempCond.condBlock = condBlock;
+        BasicBlock temp = tempCond;
+        BasicBlock tempCondTwo = null;
+        if (tempCond.IDNum != condBlock.IDNum) {
+            while (temp.parentBlocks.get(0).IDNum != condBlock.IDNum) {
+                tempCondTwo = temp.parentBlocks.get(0);
+                tempCondTwo.isCond = true;
+                tempCondTwo.nested = condBlock.nested;
+                tempCondTwo.condBlock = condBlock;
+                temp.condBlock = tempCond;
+                temp = tempCondTwo;
+//                tempCondTwo = tempCond.parentBlocks.get(0);
+//                tempCondTwo.isCond = true;
+//                tempCondTwo.nested = condBlock.nested;
+//                tempCondTwo.condBlock = condBlock;
+//                tempCond.condBlock = tempCondTwo;
+            }
+        }
+
         if (token.kind != TokenKind.reservedWord || token.id != ReservedWords.doDefaultId.ordinal()) {
             //error
             error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, "do");
@@ -906,7 +929,7 @@ public class Parser {
         whileBlock.arrayMap.putAll(irTree.current.arrayMap);
         whileBlock.parentBlocks.add(irTree.current);
         whileBlock.isWhileBlock = true;
-        whileBlock.condBlock = condBlock;
+        whileBlock.condBlock = tempCond;
         whileBlock.nested = condBlock.nested;
 
         irTree.current.childBlocks.add(whileBlock);
@@ -933,8 +956,8 @@ public class Parser {
         newBlock.dominatorTree = condBlock.dominatorTree.clone();
         newBlock.declaredVariables.addAll(condBlock.declaredVariables);
         newBlock.arrayMap.putAll(condBlock.arrayMap);
-        newBlock.parentBlocks.add(condBlock);
-        condBlock.childBlocks.add(newBlock);
+        newBlock.parentBlocks.add(tempCond);
+        tempCond.childBlocks.add(newBlock);
         irTree.current = newBlock;
         token = lexer.nextToken();
 
@@ -949,24 +972,36 @@ public class Parser {
         newBlock.isWhileBlock = condBlock.isWhileBlock;
 
         condBlock.IDNum2 = newBlock.IDNum;
+        tempCond.IDNum2 = condBlock.IDNum2;
+        tempCondTwo = tempCond.parentBlocks.get(0);
+        if (tempCondTwo != null) {
+            while (tempCondTwo != condBlock) {
+                tempCondTwo.IDNum2 = condBlock.IDNum2;
+                tempCondTwo = tempCondTwo.parentBlocks.get(0);
+            }
+        }
 
         Instruction empty = new Instruction(Operators.nop);
         condBlock.instructions.add(0, empty);
         condBlock.instructionIDs.add(empty.IDNum);
 
-        Instruction firstInstr = newBlock.instructions.get(0);
-        Operand ops = new Operand(false, 0, firstInstr.IDNum, -1);
-        ops.returnVal = firstInstr;
-        Instruction branchCond = condBlock.getLastInstruction();
-        branchCond.secondOp = ops;
-        condBlock.setLastInstruction(branchCond);
-
-        firstInstr = condBlock.instructions.get(0);
+        Instruction firstInstr = condBlock.instructions.get(0);
         Operand op = new Operand(false, 0, firstInstr.IDNum, -1);
         op.returnVal = firstInstr;
         Instruction branch = new Instruction(Operators.bra, op);
         condBlock.parentBlocks.get(1).instructions.add(branch);
         condBlock.parentBlocks.get(1).instructionIDs.add(branch.IDNum);
+
+        firstInstr = newBlock.instructions.get(0);
+        Operand ops = new Operand(false, 0, firstInstr.IDNum, -1);
+        ops.returnVal = firstInstr;
+//        System.out.println(ops.valGenerator);
+//        condBlock = newBlock.parentBlocks.get(0);
+//        condBlock.childBlocks.add(newBlock);
+        Instruction branchCond = tempCond.getLastInstruction();
+        branchCond.secondOp = ops;
+        tempCond.setLastInstruction(branchCond);
+
 
         if (newBlock.nested == 0) {
             InstructionLinkedList[] newDomTree = commonSubExpressionWhile(irTree, condBlock, newBlock, tempDomTree);
@@ -1179,9 +1214,9 @@ public class Parser {
             Instruction popFPInstr = popOperation(irTree, spOp, 4);
             popFPInstr.storeRegister = Registers.FP.name();
             //pop previous return address, calculate offset to increase to get the start of result
-            int offset=4+4*irTree.numParam;
-            if(!irTree.isVoid){
-                offset+=4;
+            int offset = 4 + 4 * irTree.numParam;
+            if (!irTree.isVoid) {
+                offset += 4;
             }
             Instruction popR31Instr = popOperation(irTree, spOp, offset);
             popR31Instr.storeRegister = Registers.R31.name();
@@ -1216,6 +1251,7 @@ public class Parser {
 
             Operand opcmp = new Operand(false, 0, cmp.IDNum, -1);
             opcmp.returnVal = cmp;
+//            System.out.println(irTree.current.IDNum);
             if (relOp.id == ReservedWords.equalToDefaultId.ordinal()) {
                 Instruction branch = new Instruction(Operators.bne, opcmp, null);
                 irTree.current.instructions.add(branch);
@@ -1434,8 +1470,7 @@ public class Parser {
                     irTree.current.instructionIDs.add(negInstr.IDNum);
                 }
                 token = lexer.nextToken();
-            }
-            else if (token.kind == TokenKind.identity) {
+            } else if (token.kind == TokenKind.identity) {
                 //identity
                 Token ident = token;
                 if (!irTree.current.declaredVariables.contains(token.id)) {
@@ -1480,7 +1515,7 @@ public class Parser {
                 result = new Operand(false, 0, negInstr.IDNum, token.id);
                 result.returnVal = negInstr;
                 Instruction duplicate = getDuplicateInstructionSingleOp(irTree.current.dominatorTree[Operators.neg.ordinal()], negInstr);
-                boolean allowdupl = (irTree.current.isCond || irTree.current.isWhileBlock) && (!negInstr.firstOp.constant && loadInstr==null);
+                boolean allowdupl = (irTree.current.isCond || irTree.current.isWhileBlock) && (!negInstr.firstOp.constant && loadInstr == null);
                 if (duplicate != null && !allowdupl) {
                     result.valGenerator = duplicate.IDNum;
                     result.returnVal = duplicate;
@@ -1494,11 +1529,10 @@ public class Parser {
                     irTree.current.instructions.add(negInstr);
                     irTree.current.instructionIDs.add(negInstr.IDNum);
                 }
-                if(token.id==ReservedWords.endingThirdBracketDefaultId.ordinal()){
+                if (token.id == ReservedWords.endingThirdBracketDefaultId.ordinal()) {
                     token = lexer.nextToken();
                 }
-            }
-            else if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
+            } else if (token.kind == TokenKind.reservedSymbol && token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
                 token = lexer.nextToken();
                 result = Expression(irTree);
                 Instruction negInstr = new Instruction(Operators.neg, result);
@@ -1524,8 +1558,7 @@ public class Parser {
                 } else {
                     error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, ")");
                 }
-            }
-            else if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.callDefaultId.ordinal()) {
+            } else if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.callDefaultId.ordinal()) {
                 token = lexer.nextToken();
                 result = funcCall(irTree, false);
                 Instruction negInstr = new Instruction(Operators.neg, result);
@@ -1548,8 +1581,7 @@ public class Parser {
             } else {
                 error(ErrorInfo.UNEXPECTED_TOKEN_PARSER_ERROR, ")");
             }
-        }
-        else if (!negation && (token.kind == TokenKind.identity || token.kind == TokenKind.number)) {
+        } else if (!negation && (token.kind == TokenKind.identity || token.kind == TokenKind.number)) {
             Token ident = token;
             if (token.kind == TokenKind.identity) {
                 //identity
@@ -1619,8 +1651,7 @@ public class Parser {
                 }
                 token = lexer.nextToken();
             }
-        }
-        else if (!negation && (token.kind == TokenKind.reservedWord && token.id == ReservedWords.callDefaultId.ordinal())) {
+        } else if (!negation && (token.kind == TokenKind.reservedWord && token.id == ReservedWords.callDefaultId.ordinal())) {
             token = lexer.nextToken();
             result = funcCall(irTree, false);
             if (token.id == ReservedWords.endingFirstBracketDefaultId.ordinal()) {

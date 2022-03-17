@@ -39,9 +39,18 @@ public class InterferenceGraph {
             if (current.originalB != null) {
                 current = current.originalB;
             }
-            if(current.isCond){
+            if (current.isCond) {
                 current.regAllVis++;
             }
+
+            System.out.println(current.IDNum);
+//            System.out.println(current.isCond);
+//            if (current.childBlocks.size() > 1 && current.childBlocks.get(1) != null) {
+//                System.out.println(current.childBlocks.get(1).IDNum + "child");
+//                System.out.println(current.childBlocks.get(1).isCond);
+//            }
+//            System.out.println();
+
             idBlockMap.put(current.IDNum, current);
             HashSet<Instruction> liveValues = new HashSet<>();
             HashSet<Instruction> thenValues = new HashSet<>();
@@ -51,54 +60,58 @@ public class InterferenceGraph {
                     if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
                         liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
                     }
+                }
+                if (current.ifDiamond == IfDiamond.ifBlock) {
+                    if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
+                        liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
+                    }
+                    if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
+                        liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
+                    }
+                } else if (current.ifDiamond == IfDiamond.thenBlock) {
+                    if (thenLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
+                        liveValues.addAll(thenLiveValues.get(current.childBlocks.get(0).IDNum));
+                    }
+                    if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
+                        liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
+                    }
+                } else if (current.ifDiamond == IfDiamond.elseBlock) {
+                    if (elseLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
+                        liveValues.addAll(elseLiveValues.get(current.childBlocks.get(0).IDNum));
+                    }
+                    if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
+                        liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
+                    }
+                } else if (current.isCond && current.childBlocks.get(1).isCond) {
+                    if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
+                        liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
+                    }
+                } else if (current.isCond && current.regAllVis == 1) {
+                    if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
+                        liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
+                    }
                 } else {
-                    if (current.ifDiamond == IfDiamond.ifBlock) {
-                        if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
-                            liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
-                        }
-                        if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
-                            liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
-                        }
-                    } else if (current.ifDiamond == IfDiamond.thenBlock) {
-                        if (thenLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
-                            liveValues.addAll(thenLiveValues.get(current.childBlocks.get(0).IDNum));
-                        }
-                        if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
-                            liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
-                        }
-                    } else if (current.ifDiamond == IfDiamond.elseBlock) {
-                        if (elseLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
-                            liveValues.addAll(elseLiveValues.get(current.childBlocks.get(0).IDNum));
-                        }
-                        if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
-                            liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
-                        }
-                    } else if (current.isCond && current.regAllVis == 1) {
-                        if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
-                            liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
-                        }
-                    } else {
-                        BasicBlock child = current.childBlocks.get(0);
-                        if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
-                            liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
-                        }
-                        if (child.parentBlocks.size() > 1) {
-                            //child is a join block
-                            int parentIndex = child.parentBlocks.indexOf(current);
-                            if (parentIndex == 0) {
-                                //current is then block
-                                if (thenLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
-                                    liveValues.addAll(thenLiveValues.get(current.childBlocks.get(0).IDNum));
-                                }
-                            } else {
-                                //current is else block
-                                if (elseLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
-                                    liveValues.addAll(elseLiveValues.get(current.childBlocks.get(0).IDNum));
-                                }
+                    BasicBlock child = current.childBlocks.get(0);
+                    if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
+                        liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
+                    }
+                    if (child.parentBlocks.size() > 1) {
+                        //child is a join block
+                        int parentIndex = child.parentBlocks.indexOf(current);
+                        if (parentIndex == 0) {
+                            //current is then block
+                            if (thenLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
+                                liveValues.addAll(thenLiveValues.get(current.childBlocks.get(0).IDNum));
+                            }
+                        } else {
+                            //current is else block
+                            if (elseLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
+                                liveValues.addAll(elseLiveValues.get(current.childBlocks.get(0).IDNum));
                             }
                         }
                     }
                 }
+
             }
             for (int i = current.instructions.size() - 1; i >= 0; i--) {
                 Instruction currInstr = current.instructions.get(i);
@@ -179,7 +192,7 @@ public class InterferenceGraph {
         if (block.isCond && visite.get(block) == 1) {
             BasicBlock cBlock = new BasicBlock(block);
             cBlock.IDNum = block.IDNum2;
-            cBlock.IDNum2 = 222;
+            cBlock.IDNum2 = block.IDNum;
             blockList.add(cBlock);
             visite.put(cBlock, 1);
         } else {

@@ -7,9 +7,15 @@ public class BasicBlockComparator implements Comparator<BasicBlock> {
             return -1;
         } else if (o1.IDNum < o2.IDNum) {
             return 1;
+        } else if (o1.isCond && o2.isCond) {
+            if (o1.IDNum2 > o2.IDNum2) {
+                return -1;
+            } else if (o1.IDNum2 < o2.IDNum2) {
+                return 1;
+            }
         } else if (o1.isCond) {
             return 1;
-        } else if (o2.isCond){
+        } else if (o2.isCond) {
             return -1;
         }
         return 0;

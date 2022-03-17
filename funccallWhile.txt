@@ -1,0 +1,16 @@
+main
+var rua2;
+function test(b);
+{
+    if b > 0 then
+        return call InputNum;
+    else
+        return 0 - call InputNum;
+    fi;
+};
+{
+    let rua2 <- call InputNum();
+    while call test(1) + call test(2) < call test(0) do
+        let rua2 <- call InputNum();
+    od;
+}.

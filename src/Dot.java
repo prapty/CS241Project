@@ -77,6 +77,7 @@ public class Dot {
     }
 
     private void branchSO(Instruction i, BasicBlock basicBlock, ArrayList<String> lines, ArrayList<String> branchLines) {
+        if(i.secondOp!= null){
         Integer branchTo = i.secondOp.valGenerator;
         BasicBlock branchBlock = null;
         for (BasicBlock cb : basicBlock.childBlocks) {
@@ -87,9 +88,10 @@ public class Dot {
                 fallThrough(basicBlock, cb, lines, branchLines);
             }
         }
+        if(branchBlock!= null){
         String branchLine = "bb" + basicBlock.IDNum + ":s -> bb" + branchBlock.IDNum + ":n [label=\"branch\"];";
-        branchLines.add(branchLine);
-    }
+        branchLines.add(branchLine);}
+    }}
 
     private void makeBlockCode(BasicBlock basicBlock, ArrayList<String> lines, ArrayList<String> branchLines) {
         lines.add("bb" + basicBlock.IDNum + " [shape=record, label=\"<b>BB" + basicBlock.IDNum + "|");
