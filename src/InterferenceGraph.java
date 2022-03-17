@@ -39,7 +39,9 @@ public class InterferenceGraph {
             if (current.originalB != null) {
                 current = current.originalB;
             }
-            System.out.println(current.IDNum + " " + current.IDNum2);
+            if(current.isCond){
+                current.regAllVis++;
+            }
             idBlockMap.put(current.IDNum, current);
             HashSet<Instruction> liveValues = new HashSet<>();
             HashSet<Instruction> thenValues = new HashSet<>();
@@ -71,7 +73,7 @@ public class InterferenceGraph {
                         if (blockLiveValues.get(current.childBlocks.get(0).IDNum) != null) {
                             liveValues.addAll(blockLiveValues.get(current.childBlocks.get(0).IDNum));
                         }
-                    } else if (current.isCond && visite.get(current) == 1) {
+                    } else if (current.isCond && current.regAllVis == 1) {
                         if (blockLiveValues.get(current.childBlocks.get(1).IDNum) != null) {
                             liveValues.addAll(blockLiveValues.get(current.childBlocks.get(1).IDNum));
                         }

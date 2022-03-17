@@ -32,6 +32,7 @@ public class BasicBlock {
     boolean retAdded;
     BasicBlock dominatorBlock;
     BasicBlock originalB;
+    int regAllVis;
 
     public BasicBlock() {
         IDNum = instrNum;
@@ -53,6 +54,7 @@ public class BasicBlock {
         ifDiamond = null;
         IDNum2 = 0;
         originalB = null;
+        regAllVis = 0;
     }
 
     public BasicBlock(BasicBlock block){
@@ -78,6 +80,7 @@ public class BasicBlock {
         this.ifDiamond = block.ifDiamond;
         this.nestedBlock = block.nestedBlock;
         originalB = block;
+        regAllVis = 0;
     }
 
     Instruction getLastInstruction() {
