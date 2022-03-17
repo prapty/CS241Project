@@ -1,3 +1,5 @@
+import jdk.swing.interop.SwingInterOpUtils;
+
 import java.io.IOException;
 import java.util.*;
 
@@ -896,26 +898,25 @@ public class Parser {
 
         relation(irTree);
 
-        BasicBlock tempCond = irTree.current;
-        tempCond.isCond = true;
-        tempCond.nested = condBlock.nested;
-        tempCond.condBlock = condBlock;
-        BasicBlock temp = tempCond;
+        BasicBlock tempCond;
         BasicBlock tempCondTwo = null;
-        if (tempCond.IDNum != condBlock.IDNum) {
-            while (temp.parentBlocks.get(0).IDNum != condBlock.IDNum) {
-                tempCondTwo = temp.parentBlocks.get(0);
-                tempCondTwo.isCond = true;
-                tempCondTwo.nested = condBlock.nested;
-                tempCondTwo.condBlock = condBlock;
-//                temp.condBlock = tempCond;
-                temp = tempCondTwo;
-//                tempCondTwo = tempCond.parentBlocks.get(0);
-//                tempCondTwo.isCond = true;
-//                tempCondTwo.nested = condBlock.nested;
-//                tempCondTwo.condBlock = condBlock;
-//                tempCond.condBlock = tempCondTwo;
+        if (irTree.current.IDNum != condBlock.IDNum) {
+            tempCond = irTree.current;
+            tempCond.isCond = true;
+            tempCond.nested = condBlock.nested;
+            tempCond.condBlock = condBlock;
+            BasicBlock temp = tempCond;
+            if (tempCond.IDNum != condBlock.IDNum) {
+                while (temp.parentBlocks.get(0).IDNum != condBlock.IDNum) {
+                    tempCondTwo = temp.parentBlocks.get(0);
+                    tempCondTwo.isCond = true;
+                    tempCondTwo.nested = condBlock.nested;
+                    tempCondTwo.condBlock = condBlock;
+                    temp = tempCondTwo;
+                }
             }
+        } else {
+            tempCond = condBlock;
         }
 
         if (token.kind != TokenKind.reservedWord || token.id != ReservedWords.doDefaultId.ordinal()) {
@@ -952,11 +953,11 @@ public class Parser {
             newBlock.isWhileBlock = true;
             newBlock.nestedBlock = true;
         }
-        newBlock.assignedVariables = condBlock.assignedVariables;
-        newBlock.valueInstructionMap.putAll(condBlock.valueInstructionMap);
-        newBlock.dominatorTree = condBlock.dominatorTree.clone();
-        newBlock.declaredVariables.addAll(condBlock.declaredVariables);
-        newBlock.arrayMap.putAll(condBlock.arrayMap);
+        newBlock.assignedVariables = tempCond.assignedVariables;
+        newBlock.valueInstructionMap.putAll(tempCond.valueInstructionMap);
+        newBlock.dominatorTree = tempCond.dominatorTree.clone();
+        newBlock.declaredVariables.addAll(tempCond.declaredVariables);
+        newBlock.arrayMap.putAll(tempCond.arrayMap);
         newBlock.parentBlocks.add(tempCond);
         tempCond.childBlocks.add(newBlock);
         irTree.current = newBlock;
