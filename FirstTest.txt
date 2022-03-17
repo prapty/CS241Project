@@ -1,16 +1,16 @@
 main
-function IsEven(n); {
-	if n < 0 then return call IsOdd(0 - n - 1); fi;
-	if n > 0 then return call IsOdd(n - 1); fi;
-	return 1;
-};
-function IsOdd(n); {
-	if n < 0 then return 0; fi;
-	if n > 0 then return -1; fi;
-	return 0;
+var rua2;
+function test(b);
+{
+    if b > 0 then
+        return call InputNum;
+    else
+        return 0 - call InputNum;
+    fi;
 };
 {
-	call OutputNum(call IsEven(0));
-	call OutputNum(call IsOdd(0 - 152));
-	call OutputNum(call IsEven(195));
+    let rua2 <- call InputNum();
+    while call test(1) + call test(2) < call test(0) do
+        let rua2 <- call InputNum();
+    od;
 }.

@@ -665,6 +665,7 @@ public class Parser {
             Instruction zeroOpInstr = new Instruction(Operators.constant, zeroOp, zeroOp);
             zeroOp = constantDuplicate(irTree, zeroOp, zeroOpInstr);
             Instruction returnValInstr = new Instruction(Operators.add, rvOp, zeroOp);
+            returnValInstr.noDuplicateCheck = true;
             irTree.current.instructions.add(returnValInstr);
             irTree.current.instructionIDs.add(returnValInstr.IDNum);
             returnValue.valGenerator = returnValInstr.IDNum;
