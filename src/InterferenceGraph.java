@@ -43,7 +43,7 @@ public class InterferenceGraph {
                 current.regAllVis++;
             }
 
-            //System.out.println(current.IDNum);
+//            System.out.println(current.IDNum);
 //            System.out.println(current.isCond);
 //            if (current.childBlocks.size() > 1 && current.childBlocks.get(1) != null) {
 //                System.out.println(current.childBlocks.get(1).IDNum + "child");
@@ -129,11 +129,14 @@ public class InterferenceGraph {
                     live = false;
                 }
                 if (live) {
+//                    System.out.println(currInstr.IDNum + ": ");
                     for (Instruction j : liveValues) {
                         if (j != null) {
                             createEdge(graph, j, currInstr);
+//                            System.out.println(j.IDNum);
                         }
                     }
+//                    System.out.println();
                     for (Instruction j : thenValues) {
                         if (j != null) {
                             createEdge(graph, j, currInstr);
@@ -151,7 +154,7 @@ public class InterferenceGraph {
                     } else {
                         currInstr.firstOp.returnVal.cost += Math.pow(10, current.nested);
                     }
-                    if (currInstr.operator == Operators.phi) {
+                    if (currInstr.operator == Operators.phi && !current.isCond) {
                         thenValues.add(currInstr.firstOp.returnVal);
                     } else {
                         liveValues.add(currInstr.firstOp.returnVal);
@@ -163,8 +166,10 @@ public class InterferenceGraph {
                     } else {
                         currInstr.secondOp.returnVal.cost += Math.pow(10, current.nested);
                     }
-                    if (currInstr.operator == Operators.phi) {
+                    if (currInstr.operator == Operators.phi && !current.isCond) {
                         elseValues.add(currInstr.secondOp.returnVal);
+                    } else if (currInstr.operator == Operators.phi && current.isCond && current.regAllVis == 2) {
+
                     } else {
                         liveValues.add(currInstr.secondOp.returnVal);
                     }

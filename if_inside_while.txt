@@ -3,6 +3,7 @@ main
   let a <- 1;
   let b <- a + 1;
   let c <- a + 1;
+  let a<- call InputNum();
   while a < 10 do
       let b <- a + 1;
       if c < 0
