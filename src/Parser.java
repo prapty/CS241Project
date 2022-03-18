@@ -702,13 +702,15 @@ public class Parser {
             Instruction readInstr = new Instruction(ops);
             irTree.current.instructions.add(readInstr);
             irTree.current.instructionIDs.add(readInstr.IDNum);
+            returnValue = new Operand(false, -1, readInstr.IDNum, -1);
+            returnValue.returnVal = readInstr;
             token = lexer.nextToken();
+            if(token.id==ReservedWords.endingFirstBracketDefaultId.ordinal()){
+                returnValue.noCallNextToken = true;
+            }
             if (token.id == ReservedWords.startingFirstBracketDefaultId.ordinal()) {
                 token = lexer.nextToken();
             }
-
-            returnValue = new Operand(false, -1, readInstr.IDNum, -1);
-            returnValue.returnVal = readInstr;
         } else if (token.id == ReservedWords.OutputNumDefaultId.ordinal()) {
             if (!fromStatement) {
                 error(ErrorInfo.UNEXPECTED_FUNCTION_TYPE_PARSER_ERROR, "non-void");

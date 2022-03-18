@@ -1,30 +1,23 @@
 main
-var a;
+var input, r;
 
-function square(a);
+function isEven(n);
+var v, result;
 {
-    return a * a;
-};
-
-function pow(a, b);
-var pow;
-{
-    let pow <- 1;
-    while b > 0 do
-        let pow <- pow * a;
-        let b <- b - 1;
+    let v <- n;
+    while v >= 2 do
+        let v <- v - 2;
     od;
-    let b <- b + 1;
-    return pow;
-    call OutputNum(pow)
-};
 
-function printZero();
-{
-    call OutputNum(0);
-    return 0
+    if v == 2 then
+        return 1;
+    else
+        return 0;
+    fi;
 };
 
 {
-     let a <- call pow(2, -call printZero)
+    let input <- call InputNum();
+    let r <- call isEven(input);
+    call OutputNum(r);
 }.
