@@ -1,17 +1,32 @@
+
 main
-var a, b, c;
+var a;
+
+function square(a);
 {
-    let a <- call InputNum();
-    let b <- call InputNum();
-    let a<- b + 4;
-    let c<- b +4;
-	while a < 10 do
-	    let a <- b +1;
-	    if b > 3 then
-	        let a <- a+1;
-	    fi;
-	od;
-	call OutputNum(a);
-	call OutputNum(b);
-	call OutputNum(b+4);
+    return a * a;
+};
+
+function pow(a, b);
+var pow;
+{
+    let pow <- 1;
+    while b > 0 do
+        let pow <- pow * a;
+        let b <- b - 1;
+    od;
+    let b <- b + 1;
+    return pow;
+    call OutputNum(pow)
+};
+
+function printZero();
+{
+    call OutputNum(0);
+    return 0;
+};
+
+{
+    let a <- call printZero() + call pow(3, call square(2)) + call printZero;
+    call OutputNum(call printZero());
 }.

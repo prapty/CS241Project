@@ -3,11 +3,11 @@ main
       {
       	let a <- call InputNum;
 
-      	let b <- a + 1;
+      	let b <- call InputNum();
 
       	while a + 1 != b
       	do
-      		let a <- a + 1;
+      		let a <- b + 1;
       	od;
 
       	call OutputNum(a);
