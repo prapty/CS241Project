@@ -8,6 +8,7 @@ public class Operand {
     Instruction returnVal;
     String arraybase;
     int arrayID;
+    boolean noCallNextToken;
 
     public Operand() {
     }

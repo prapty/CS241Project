@@ -10,7 +10,7 @@ function test(b);
     let rua2 <- call InputNum();
     let b <- rua2 +1;
     let c <- b;
-    while call test(0) < b+1 do
+    while call test(0) + call test(1) < call test(2) do
         let rua2 <- call InputNum();
         let c <- b + 1;
     od;

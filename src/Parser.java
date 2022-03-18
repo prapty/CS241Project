@@ -566,8 +566,10 @@ public class Parser {
         if (!fromStatement && function.isVoid) {
             error(ErrorInfo.UNEXPECTED_FUNCTION_TYPE_PARSER_ERROR, "non-void");
         }
-
         token = lexer.nextToken();
+        if(token.id==ReservedWords.endingFirstBracketDefaultId.ordinal()){
+            returnValue.noCallNextToken = true;
+        }
         IntermediateTree functionIrTree = function.irTree;
         //push all used registers to the stack
         pushRegisterOperation(irTree);
@@ -718,7 +720,7 @@ public class Parser {
             Instruction write = new Instruction(ops, writtenNum);
             irTree.current.instructions.add(write);
             irTree.current.instructionIDs.add(write.IDNum);
-            if (token.id != ReservedWords.semicolonDefaultId.ordinal()) {
+            if (token.id != ReservedWords.semicolonDefaultId.ordinal() && token.id != ReservedWords.endingCurlyBracketDefaultId.ordinal()) {
                 token = lexer.nextToken();
             }
         } else if (token.id == ReservedWords.OutputNewLineDefaultId.ordinal()) {
@@ -1582,12 +1584,13 @@ public class Parser {
             } else if (token.kind == TokenKind.reservedWord && token.id == ReservedWords.callDefaultId.ordinal()) {
                 token = lexer.nextToken();
                 result = funcCall(irTree, false);
+                boolean noCallNextToken = result.noCallNextToken;
                 Instruction negInstr = new Instruction(Operators.neg, result);
                 result = new Operand(false, 0, negInstr.IDNum, token.id);
                 result.returnVal = negInstr;
                 irTree.current.instructions.add(negInstr);
                 irTree.current.instructionIDs.add(negInstr.IDNum);
-                if (token.id == ReservedWords.endingFirstBracketDefaultId.ordinal()) {
+                if (token.id == ReservedWords.endingFirstBracketDefaultId.ordinal() && !noCallNextToken) {
                     token = lexer.nextToken();
                 }
             }
@@ -1675,7 +1678,7 @@ public class Parser {
         } else if (!negation && (token.kind == TokenKind.reservedWord && token.id == ReservedWords.callDefaultId.ordinal())) {
             token = lexer.nextToken();
             result = funcCall(irTree, false);
-            if (token.id == ReservedWords.endingFirstBracketDefaultId.ordinal()) {
+            if (token.id == ReservedWords.endingFirstBracketDefaultId.ordinal()&& !result.noCallNextToken) {
                 token = lexer.nextToken();
             }
         }
