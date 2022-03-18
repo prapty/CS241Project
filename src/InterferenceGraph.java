@@ -136,6 +136,7 @@ public class InterferenceGraph {
 //                            System.out.println(j.IDNum);
                         }
                     }
+
 //                    System.out.println();
                     for (Instruction j : thenValues) {
                         if (j != null) {
