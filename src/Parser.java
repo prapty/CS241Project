@@ -667,9 +667,9 @@ public class Parser {
         irTree.current = newBlock;
         //pop register values
         popRegisterOperation(irTree);
-//        if (token.id == ReservedWords.endingFirstBracketDefaultId.ordinal()) {
-//            token = lexer.nextToken();
-//        }
+        if (fromStatement && token.id == ReservedWords.endingFirstBracketDefaultId.ordinal()) {
+            token = lexer.nextToken();
+        }
         //pop returned value
         if (!function.isVoid) {
             Operand spOp = new Operand(Registers.SP.name());

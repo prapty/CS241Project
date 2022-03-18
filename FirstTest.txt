@@ -1,4 +1,3 @@
-
 main
 var a;
 
@@ -20,13 +19,13 @@ var pow;
     call OutputNum(pow)
 };
 
-function printZero();
+void function printZero();
 {
-    call OutputNum(0);
-    return 0;
+    call OutputNum(0)
 };
 
 {
-    let a <- call printZero() + call pow(3, call square(2)) + call printZero;
-    call OutputNum(call printZero());
+    let a <- call pow(3, call square(2));
+    call printZero();
+    call OutputNum(a)
 }.
